@@ -314,7 +314,7 @@
           const sNum = loginStudentNum.trim();
           const sName = loginName.trim();
           if (!sNum || !sName) { setLoginError('학번과 이름을 모두 입력해주세요.'); return; }
-          targetId = `${sNum} ${sName}`; // [핵심] 학번과 이름을 조합하여 고유 ID 생성
+          targetId = `${sNum} ${sName}`; 
         } else {
           const tName = loginName.trim();
           if (!tName) { setLoginError('선생님 이름 또는 ID를 입력해주세요.'); return; }
@@ -773,16 +773,16 @@
                 <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8">
                   <h2 className="text-xl font-bold mb-4">학급 상황판</h2>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-sm">
-                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px] text-center">학번 이름</th><th className="p-3 text-center whitespace-nowrap">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center">{n}번</th>)}</tr></thead>
+                    <table className="w-full border-collapse text-sm">
+                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
                       <tbody>
                         {classStats.map(student => (
                           <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                            <td className="p-3 font-medium whitespace-nowrap text-center">{student.name}</td>
-                            <td className="p-3 text-center font-bold">{Math.round((student.metCount/7)*100)}%</td>
+                            <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{student.name}</td>
+                            <td className="p-3 text-center font-bold align-middle">{Math.round((student.metCount/7)*100)}%</td>
                             {[1,2,3,4,5,6,7].map(n => {
                               let isMet = n === 1 ? Object.values(student.categories[1]).some(data=>data.hours>=12) : student.categories[n].length > 0;
-                              return <td key={n} className="p-3 text-center">{isMet ? <CheckCircle size={16} className="text-green-500 mx-auto"/> : '-'}</td>;
+                              return <td key={n} className="p-3 text-center align-middle">{isMet ? <CheckCircle size={16} className="text-green-500 mx-auto"/> : '-'}</td>;
                             })}
                           </tr>
                         ))}
@@ -974,13 +974,13 @@
                     {/* 학생별 종합 현황 (Matrix View) */}
                     {allViewMode === 'matrix' && (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+                        <table className="w-full text-sm border-collapse min-w-[800px]">
                           <thead>
                             <tr className="bg-slate-50 border-y border-gray-200">
-                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px] text-center">학번 이름</th>
-                              <th className="p-3 font-semibold text-gray-600 text-center w-16 whitespace-nowrap">진행도</th>
+                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th>
+                              <th className="p-3 font-semibold text-gray-600 text-center w-16 whitespace-nowrap align-middle">진행도</th>
                               {CATEGORIES.map(c => (
-                                <th key={c.id} className="p-2 font-semibold text-gray-600 text-center text-xs leading-tight min-w-[120px]" title={c.title}>
+                                <th key={c.id} className="p-2 font-semibold text-gray-600 text-center text-xs leading-tight min-w-[120px] align-middle" title={c.title}>
                                   <div className="mb-1 text-gray-700 font-bold">{c.id}.</div>
                                   <div className="font-normal whitespace-normal break-keep">{c.title}</div>
                                 </th>
@@ -995,11 +995,11 @@
 
                               return (
                                 <tr key={student.name} className="border-b border-gray-100 hover:bg-slate-50">
-                                  <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center">{student.name}</td>
-                                  <td className="p-3 text-center font-bold text-indigo-600">{Math.round((student.metCount / 7) * 100)}%</td>
+                                  <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center align-middle">{student.name}</td>
+                                  <td className="p-3 text-center font-bold text-indigo-600 align-middle">{Math.round((student.metCount / 7) * 100)}%</td>
                                   
                                   {/* 1번 자기주도학습: 누적 시간별 상태 표시 */}
-                                  <td className="p-3 text-center" title={cat1Tooltip}>
+                                  <td className="p-3 text-center align-middle" title={cat1Tooltip}>
                                     <div className="flex flex-col items-center justify-center cursor-help">
                                       {cat1IsMet ? <CheckCircle size={18} className="text-green-500 mb-1" /> : <X size={18} className="text-gray-300 mb-1" />}
                                       <span className="text-[10px] text-gray-500 whitespace-pre-wrap leading-tight max-w-[90px]">
@@ -1027,7 +1027,7 @@
                               );
                             })}
                             {classStats.length === 0 && (
-                              <tr><td colSpan="9" className="p-8 text-center text-gray-500">조회된 명단이 없습니다.</td></tr>
+                              <tr><td colSpan="9" className="p-8 text-center text-gray-500 align-middle">조회된 명단이 없습니다.</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -1037,26 +1037,34 @@
                     {/* 상세 목록 (List View) */}
                     {allViewMode === 'list' && (
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left border-collapse">
-                          <thead><tr className="bg-gray-100 border-y border-gray-200"><th className="p-3 font-semibold whitespace-nowrap min-w-[140px] text-center">학번 이름</th><th className="p-3 font-semibold w-48">항목</th><th className="p-3 font-semibold">세부내용/시간</th><th className="p-3 font-semibold text-center w-20">상태</th><th className="p-3 font-semibold text-center w-16">삭제</th></tr></thead>
+                        <table className="w-full text-sm border-collapse">
+                          <thead><tr className="bg-gray-100 border-y border-gray-200">
+                            {currentUser.role === 'admin' && <th className="p-3 font-semibold text-center align-middle whitespace-nowrap">담당교사</th>}
+                            <th className="p-3 font-semibold whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th>
+                            <th className="p-3 font-semibold w-48 text-left align-middle">항목</th>
+                            <th className="p-3 font-semibold text-left align-middle">세부내용/시간</th>
+                            <th className="p-3 font-semibold text-center w-20 align-middle">상태</th>
+                            <th className="p-3 font-semibold text-center w-16 align-middle">삭제</th>
+                          </tr></thead>
                           <tbody>
                             {sortedSubmissions.map(sub => (
                               <tr key={sub.id} className="border-b hover:bg-slate-50">
-                                <td className="p-3 font-bold whitespace-nowrap text-center">{sub.studentName}</td>
-                                <td className="p-3 truncate max-w-[200px]" title={CATEGORIES.find(c=>c.id===sub.category)?.title}>{CATEGORIES.find(c=>c.id===sub.category)?.title}</td>
-                                <td className="p-3 text-gray-600">
+                                {currentUser.role === 'admin' && <td className="p-3 text-center text-indigo-700 font-medium whitespace-nowrap align-middle">{sub.teacherName || '-'}</td>}
+                                <td className="p-3 font-bold whitespace-nowrap text-center align-middle">{sub.studentName}</td>
+                                <td className="p-3 text-left align-middle truncate max-w-[200px]" title={CATEGORIES.find(c=>c.id===sub.category)?.title}>{CATEGORIES.find(c=>c.id===sub.category)?.title}</td>
+                                <td className="p-3 text-left align-middle text-gray-600">
                                   {sub.category === 1 ? <span className="font-semibold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : <span className="line-clamp-2">{sub.description}</span>}
                                 </td>
-                                <td className="p-3 text-center">
+                                <td className="p-3 text-center align-middle">
                                   <span className={`px-2 py-0.5 rounded text-xs font-bold ${sub.status === 'approved' ? 'bg-green-100 text-green-700' : sub.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                                     {sub.status === 'approved' ? '승인' : sub.status === 'rejected' ? '반려' : '대기'}
                                   </span>
                                 </td>
-                                <td className="p-3 text-center"><button onClick={()=>handleDelete(sub.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
+                                <td className="p-3 text-center align-middle"><button onClick={()=>handleDelete(sub.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                               </tr>
                             ))}
                             {sortedSubmissions.length === 0 && (
-                              <tr><td colSpan="5" className="p-8 text-center text-gray-500">데이터가 없습니다.</td></tr>
+                              <tr><td colSpan={currentUser.role === 'admin' ? 6 : 5} className="p-8 text-center text-gray-500 align-middle">데이터가 없습니다.</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -1100,18 +1108,18 @@
                           {uploadTeacherMessage && <p className={`mt-2 font-medium text-sm ${uploadTeacherMessage.includes('오류') ? 'text-red-500' : 'text-green-600'}`}>{uploadTeacherMessage}</p>}
                         </div>
 
-                        <table className="w-full text-sm text-left mt-4">
-                          <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[120px] text-center">이름</th><th className="p-2 text-center whitespace-nowrap">초기화</th><th className="p-2 text-center whitespace-nowrap">계정삭제</th></tr></thead>
+                        <table className="w-full text-sm border-collapse mt-4">
+                          <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[120px] text-center align-middle">이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">계정삭제</th></tr></thead>
                           <tbody>
                             {teacherRoster.map(t => (
                               <tr key={t.id} className="border-b">
-                                <td className="p-2 font-medium whitespace-nowrap text-center">{t.name} {t.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
-                                <td className="p-2 text-center"><button onClick={()=>handleResetPassword(t.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
-                                <td className="p-2 text-center"><button onClick={()=>handleDeleteUser(t.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
+                                <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{t.name} {t.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
+                                <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(t.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
+                                <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteUser(t.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                               </tr>
                             ))}
                             {teacherRoster.length === 0 && (
-                              <tr><td colSpan="3" className="p-4 text-center text-gray-500">등록된 교사가 없습니다.</td></tr>
+                              <tr><td colSpan="3" className="p-4 text-center text-gray-500 align-middle">등록된 교사가 없습니다.</td></tr>
                             )}
                           </tbody>
                         </table>
@@ -1169,14 +1177,14 @@
 
                     <div className="bg-white rounded-2xl shadow-sm border p-6">
                       <h2 className="text-xl font-bold mb-4">학생 비밀번호 초기화 및 관리</h2>
-                      <table className="w-full text-sm text-left">
-                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px] text-center">학번 이름</th><th className="p-2 text-center whitespace-nowrap">초기화</th><th className="p-2 text-center whitespace-nowrap">명단삭제</th></tr></thead>
+                      <table className="w-full text-sm border-collapse">
+                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
                         <tbody>
                           {classRoster.map(st => (
                             <tr key={st.id} className="border-b">
-                              <td className="p-2 font-medium whitespace-nowrap text-center">{st.name} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
-                              <td className="p-2 text-center"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
-                              <td className="p-2 text-center"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
+                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{st.name} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
+                              <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
+                              <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                             </tr>
                           ))}
                         </tbody>
