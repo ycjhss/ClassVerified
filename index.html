@@ -142,22 +142,32 @@
 
       const qrCanvasRef = useRef(null);
 
-      // 💡 어떤 환경, 어떤 표에서도 강제로 띄어지게 물리적 공백(&nbsp;)을 삽입하는 완전한 포맷 함수!
-      const formatName = (fullName) => {
+      // 💡 학번과 이름의 세로 줄맞춤을 100% 보장하는 Grid 레이아웃 포맷 함수!
+      const formatName = (fullName, isTable = true) => {
         if (!fullName) return '';
-        // 정규식: 앞부분의 모든 숫자(\d+)를 학번으로 잡고, 중간의 모든 종류의 공백(\s*)을 무시한 뒤, 나머지(.+)를 이름으로 분리
+        // 정규식: 맨 앞의 숫자(\d+)와 나머지 텍스트(.+)를 분리
         const match = String(fullName).trim().match(/^(\d+)\s*(.+)$/);
         
         if (match && match[1] && match[2]) {
-          return (
-            <span>
-              <span className="text-slate-500 font-normal tracking-widest">{match[1]}</span>
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              <span className="text-slate-800 font-bold">{match[2]}</span>
-            </span>
-          );
+          if (isTable) {
+            // 표 내부일 경우: 2칸짜리 고정 격자(Grid)를 만들어 학번은 왼쪽 칸 중앙에, 이름은 오른쪽 칸 중앙에 고정
+            return (
+              <div className="inline-grid grid-cols-2 gap-2 w-36 items-center">
+                <span className="text-center text-slate-500 font-normal tracking-widest">{match[1]}</span>
+                <span className="text-center text-slate-800 font-bold">{match[2]}</span>
+              </div>
+            );
+          } else {
+            // 일반 카드 화면일 경우: 자연스럽게 옆으로 나열
+            return (
+              <span className="inline-flex items-center gap-3">
+                <span className="text-slate-500 font-normal tracking-widest">{match[1]}</span>
+                <span className="text-slate-800 font-bold">{match[2]}</span>
+              </span>
+            );
+          }
         }
-        return <span className="text-slate-800 font-bold">{fullName}</span>;
+        return <span className="font-bold text-slate-800">{fullName}</span>;
       };
 
       useEffect(() => {
@@ -792,7 +802,7 @@
                   <h2 className="text-xl font-bold mb-4">학급 상황판</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
-                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px] text-center align-middle">학번&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;이름</th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
+                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
                       <tbody>
                         {classStats.map(student => (
                           <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
@@ -919,7 +929,7 @@
                     {visibleSubmissions.filter(s => s.status === 'pending').map(sub => (
                       <div key={sub.id} className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex justify-between items-center mb-3">
                         <div>
-                          <p className="font-bold">{formatName(sub.studentName)} <span className="text-sm font-normal text-gray-500 ml-1">[{CATEGORIES.find(c=>c.id===sub.category)?.title}]</span></p>
+                          <p className="font-bold">{formatName(sub.studentName, false)} <span className="text-sm font-normal text-gray-500 ml-1">[{CATEGORIES.find(c=>c.id===sub.category)?.title}]</span></p>
                           <p className="text-sm mt-1">{sub.category === 1 ? <span className="font-bold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : sub.description}</p>
                         </div>
                         <div className="space-x-2">
@@ -995,7 +1005,7 @@
                         <table className="w-full text-sm border-collapse min-w-[800px]">
                           <thead>
                             <tr className="bg-slate-50 border-y border-gray-200">
-                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px] text-center align-middle">학번&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;이름</th>
+                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th>
                               <th className="p-3 font-semibold text-gray-600 text-center w-16 whitespace-nowrap align-middle">진행도</th>
                               {CATEGORIES.map(c => (
                                 <th key={c.id} className="p-2 font-semibold text-gray-600 text-center text-xs leading-tight min-w-[120px] align-middle" title={c.title}>
@@ -1058,7 +1068,7 @@
                         <table className="w-full text-sm border-collapse">
                           <thead><tr className="bg-gray-100 border-y border-gray-200">
                             {currentUser.role === 'admin' && <th className="p-3 font-semibold text-center align-middle whitespace-nowrap">담당교사</th>}
-                            <th className="p-3 font-semibold whitespace-nowrap min-w-[140px] text-center align-middle">학번&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;이름</th>
+                            <th className="p-3 font-semibold whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th>
                             <th className="p-3 font-semibold w-48 text-left align-middle">항목</th>
                             <th className="p-3 font-semibold text-left align-middle">세부내용/시간</th>
                             <th className="p-3 font-semibold text-center w-20 align-middle">상태</th>
@@ -1196,11 +1206,18 @@
                     <div className="bg-white rounded-2xl shadow-sm border p-6">
                       <h2 className="text-xl font-bold mb-4">학생 비밀번호 초기화 및 관리</h2>
                       <table className="w-full text-sm border-collapse">
-                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px] text-center align-middle">학번&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
+                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[200px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
                         <tbody>
                           {classRoster.map(st => (
                             <tr key={st.id} className="border-b">
-                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{formatName(st.name)} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
+                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">
+                                <div className="relative inline-block">
+                                  {formatName(st.name)}
+                                  <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] w-16 text-left">
+                                    {st.password ? <span className="text-green-600">(설정됨)</span> : <span className="text-gray-400">(초기상태)</span>}
+                                  </span>
+                                </div>
+                              </td>
                               <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
                               <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                             </tr>
