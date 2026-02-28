@@ -142,21 +142,23 @@
 
       const qrCanvasRef = useRef(null);
 
-      // 💡 학번과 이름 사이 간격을 확실하게 넓혀주고, 색상을 부드럽게 분리하는 포맷 함수 (간격 대폭 확대)
+      // 💡 학번과 이름 사이 간격을 확실하게 넓혀주고, 공백 종류에 상관없이 숫자를 강제로 추출하는 업그레이드 함수!
       const formatName = (fullName) => {
         if (!fullName) return '';
-        const parts = fullName.split(' ');
-        if (parts.length >= 2 && !isNaN(parts[0])) {
-          const num = parts[0];
-          const name = parts.slice(1).join(' ');
+        // 정규식: 앞부분의 모든 숫자(\d+)를 학번으로 잡고, 중간의 모든 종류의 공백(\s*)을 무시한 뒤, 나머지(.+)를 이름으로 분리
+        const match = String(fullName).trim().match(/^(\d+)\s*(.+)$/);
+        
+        if (match && match[1] && match[2]) {
+          const num = match[1];
+          const name = match[2];
           return (
-            <span className="inline-flex items-center gap-6">
+            <span className="inline-flex items-center justify-center gap-5">
               <span className="text-slate-500 font-normal tracking-widest">{num}</span>
               <span className="text-slate-800 font-bold">{name}</span>
             </span>
           );
         }
-        return fullName;
+        return <span className="text-slate-800 font-bold">{fullName}</span>;
       };
 
       useEffect(() => {
