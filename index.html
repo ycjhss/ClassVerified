@@ -793,7 +793,7 @@
                   <h2 className="text-xl font-bold mb-4">학급 상황판</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
-                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
+                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px] text-center align-middle"><span className="inline-flex items-center justify-center gap-5"><span>학번</span><span>이름</span></span></th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
                       <tbody>
                         {classStats.map(student => (
                           <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
@@ -996,7 +996,7 @@
                         <table className="w-full text-sm border-collapse min-w-[800px]">
                           <thead>
                             <tr className="bg-slate-50 border-y border-gray-200">
-                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th>
+                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px] text-center align-middle"><span className="inline-flex items-center justify-center gap-5"><span>학번</span><span>이름</span></span></th>
                               <th className="p-3 font-semibold text-gray-600 text-center w-16 whitespace-nowrap align-middle">진행도</th>
                               {CATEGORIES.map(c => (
                                 <th key={c.id} className="p-2 font-semibold text-gray-600 text-center text-xs leading-tight min-w-[120px] align-middle" title={c.title}>
@@ -1059,7 +1059,7 @@
                         <table className="w-full text-sm border-collapse">
                           <thead><tr className="bg-gray-100 border-y border-gray-200">
                             {currentUser.role === 'admin' && <th className="p-3 font-semibold text-center align-middle whitespace-nowrap">담당교사</th>}
-                            <th className="p-3 font-semibold whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th>
+                            <th className="p-3 font-semibold whitespace-nowrap min-w-[140px] text-center align-middle"><span className="inline-flex items-center justify-center gap-5"><span>학번</span><span>이름</span></span></th>
                             <th className="p-3 font-semibold w-48 text-left align-middle">항목</th>
                             <th className="p-3 font-semibold text-left align-middle">세부내용/시간</th>
                             <th className="p-3 font-semibold text-center w-20 align-middle">상태</th>
@@ -1197,7 +1197,7 @@
                     <div className="bg-white rounded-2xl shadow-sm border p-6">
                       <h2 className="text-xl font-bold mb-4">학생 비밀번호 초기화 및 관리</h2>
                       <table className="w-full text-sm border-collapse">
-                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px] text-center align-middle">학번 이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
+                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px] text-center align-middle"><span className="inline-flex items-center justify-center gap-5"><span>학번</span><span>이름</span></span></th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
                         <tbody>
                           {classRoster.map(st => (
                             <tr key={st.id} className="border-b">
