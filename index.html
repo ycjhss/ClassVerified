@@ -774,7 +774,7 @@
                   <h2 className="text-xl font-bold mb-4">학급 상황판</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm">
-                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap">학번 이름</th><th className="p-3 text-center">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center">{n}번</th>)}</tr></thead>
+                      <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[140px]">학번 이름</th><th className="p-3 text-center whitespace-nowrap">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center">{n}번</th>)}</tr></thead>
                       <tbody>
                         {classStats.map(student => (
                           <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
@@ -977,7 +977,7 @@
                         <table className="w-full text-sm text-left border-collapse min-w-[800px]">
                           <thead>
                             <tr className="bg-slate-50 border-y border-gray-200">
-                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap">학번 이름</th>
+                              <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[140px]">학번 이름</th>
                               <th className="p-3 font-semibold text-gray-600 text-center w-16 whitespace-nowrap">진행도</th>
                               {CATEGORIES.map(c => (
                                 <th key={c.id} className="p-2 font-semibold text-gray-600 text-center text-xs leading-tight min-w-[120px]" title={c.title}>
@@ -1038,7 +1038,7 @@
                     {allViewMode === 'list' && (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left border-collapse">
-                          <thead><tr className="bg-gray-100 border-y border-gray-200"><th className="p-3 font-semibold whitespace-nowrap">학번 이름</th><th className="p-3 font-semibold w-48">항목</th><th className="p-3 font-semibold">세부내용/시간</th><th className="p-3 font-semibold text-center w-20">상태</th><th className="p-3 font-semibold text-center w-16">삭제</th></tr></thead>
+                          <thead><tr className="bg-gray-100 border-y border-gray-200"><th className="p-3 font-semibold whitespace-nowrap min-w-[140px]">학번 이름</th><th className="p-3 font-semibold w-48">항목</th><th className="p-3 font-semibold">세부내용/시간</th><th className="p-3 font-semibold text-center w-20">상태</th><th className="p-3 font-semibold text-center w-16">삭제</th></tr></thead>
                           <tbody>
                             {sortedSubmissions.map(sub => (
                               <tr key={sub.id} className="border-b hover:bg-slate-50">
@@ -1101,11 +1101,11 @@
                         </div>
 
                         <table className="w-full text-sm text-left mt-4">
-                          <thead><tr className="bg-gray-100"><th className="p-2">이름</th><th className="p-2 text-center">초기화</th><th className="p-2 text-center">계정삭제</th></tr></thead>
+                          <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[120px]">이름</th><th className="p-2 text-center whitespace-nowrap">초기화</th><th className="p-2 text-center whitespace-nowrap">계정삭제</th></tr></thead>
                           <tbody>
                             {teacherRoster.map(t => (
                               <tr key={t.id} className="border-b">
-                                <td className="p-2 font-medium">{t.name} {t.password ? <span className="text-green-600 text-xs">(설정됨)</span> : <span className="text-gray-400 text-xs">(초기상태)</span>}</td>
+                                <td className="p-2 font-medium whitespace-nowrap">{t.name} {t.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
                                 <td className="p-2 text-center"><button onClick={()=>handleResetPassword(t.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
                                 <td className="p-2 text-center"><button onClick={()=>handleDeleteUser(t.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                               </tr>
@@ -1170,11 +1170,11 @@
                     <div className="bg-white rounded-2xl shadow-sm border p-6">
                       <h2 className="text-xl font-bold mb-4">학생 비밀번호 초기화 및 관리</h2>
                       <table className="w-full text-sm text-left">
-                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap">학번 이름</th><th className="p-2 text-center">초기화</th><th className="p-2 text-center">명단삭제</th></tr></thead>
+                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[140px]">학번 이름</th><th className="p-2 text-center whitespace-nowrap">초기화</th><th className="p-2 text-center whitespace-nowrap">명단삭제</th></tr></thead>
                         <tbody>
                           {classRoster.map(st => (
                             <tr key={st.id} className="border-b">
-                              <td className="p-2 font-medium whitespace-nowrap">{st.name} {st.password ? <span className="text-green-600 text-xs">(설정됨)</span> : <span className="text-gray-400 text-xs">(초기상태)</span>}</td>
+                              <td className="p-2 font-medium whitespace-nowrap">{st.name} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
                               <td className="p-2 text-center"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
                               <td className="p-2 text-center"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                             </tr>
