@@ -142,6 +142,23 @@
 
       const qrCanvasRef = useRef(null);
 
+      // 💡 학번과 이름 사이 간격을 확실하게 넓혀주고, 색상을 부드럽게 분리하는 포맷 함수
+      const formatName = (fullName) => {
+        if (!fullName) return '';
+        const parts = fullName.split(' ');
+        if (parts.length >= 2 && !isNaN(parts[0])) {
+          const num = parts[0];
+          const name = parts.slice(1).join(' ');
+          return (
+            <span>
+              <span className="mr-3 opacity-60 font-normal">{num}</span>
+              <span>{name}</span>
+            </span>
+          );
+        }
+        return fullName;
+      };
+
       useEffect(() => {
         const initAuth = async () => {
           try {
@@ -778,7 +795,7 @@
                       <tbody>
                         {classStats.map(student => (
                           <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
-                            <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{student.name}</td>
+                            <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                             <td className="p-3 text-center font-bold align-middle">{Math.round((student.metCount/7)*100)}%</td>
                             {[1,2,3,4,5,6,7].map(n => {
                               let isMet = n === 1 ? Object.values(student.categories[1]).some(data=>data.hours>=12) : student.categories[n].length > 0;
@@ -901,7 +918,7 @@
                     {visibleSubmissions.filter(s => s.status === 'pending').map(sub => (
                       <div key={sub.id} className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex justify-between items-center mb-3">
                         <div>
-                          <p className="font-bold">{sub.studentName} <span className="text-sm font-normal text-gray-500">[{CATEGORIES.find(c=>c.id===sub.category)?.title}]</span></p>
+                          <p className="font-bold">{formatName(sub.studentName)} <span className="text-sm font-normal text-gray-500 ml-1">[{CATEGORIES.find(c=>c.id===sub.category)?.title}]</span></p>
                           <p className="text-sm mt-1">{sub.category === 1 ? <span className="font-bold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : sub.description}</p>
                         </div>
                         <div className="space-x-2">
@@ -995,7 +1012,7 @@
 
                               return (
                                 <tr key={student.name} className="border-b border-gray-100 hover:bg-slate-50">
-                                  <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center align-middle">{student.name}</td>
+                                  <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                                   <td className="p-3 text-center font-bold text-indigo-600 align-middle">{Math.round((student.metCount / 7) * 100)}%</td>
                                   
                                   {/* 1번 자기주도학습: 누적 시간별 상태 표시 */}
@@ -1050,7 +1067,7 @@
                             {sortedSubmissions.map(sub => (
                               <tr key={sub.id} className="border-b hover:bg-slate-50">
                                 {currentUser.role === 'admin' && <td className="p-3 text-center text-indigo-700 font-medium whitespace-nowrap align-middle">{sub.teacherName || '-'}</td>}
-                                <td className="p-3 font-bold whitespace-nowrap text-center align-middle">{sub.studentName}</td>
+                                <td className="p-3 font-bold whitespace-nowrap text-center align-middle">{formatName(sub.studentName)}</td>
                                 <td className="p-3 text-left align-middle truncate max-w-[200px]" title={CATEGORIES.find(c=>c.id===sub.category)?.title}>{CATEGORIES.find(c=>c.id===sub.category)?.title}</td>
                                 <td className="p-3 text-left align-middle text-gray-600">
                                   {sub.category === 1 ? <span className="font-semibold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : <span className="line-clamp-2">{sub.description}</span>}
@@ -1182,7 +1199,7 @@
                         <tbody>
                           {classRoster.map(st => (
                             <tr key={st.id} className="border-b">
-                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{st.name} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
+                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{formatName(st.name)} {st.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
                               <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
                               <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
                             </tr>
