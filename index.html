@@ -142,7 +142,7 @@
 
       const qrCanvasRef = useRef(null);
 
-      // 💡 학번과 이름 사이 간격을 확실하게 넓혀주고, 색상을 부드럽게 분리하는 포맷 함수
+      // 💡 학번과 이름 사이 간격을 확실하게 넓혀주고, 색상을 부드럽게 분리하는 포맷 함수 (간격 대폭 확대)
       const formatName = (fullName) => {
         if (!fullName) return '';
         const parts = fullName.split(' ');
@@ -150,9 +150,9 @@
           const num = parts[0];
           const name = parts.slice(1).join(' ');
           return (
-            <span>
-              <span className="mr-3 opacity-60 font-normal">{num}</span>
-              <span>{name}</span>
+            <span className="inline-flex items-center gap-6">
+              <span className="text-slate-500 font-normal tracking-widest">{num}</span>
+              <span className="text-slate-800 font-bold">{name}</span>
             </span>
           );
         }
