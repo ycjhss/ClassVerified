@@ -88,9 +88,9 @@
     const getSubmissionDoc = (id) => getSubmissionsRef().doc(id);
     const getUserDoc = (name) => getUsersRef().doc(name);
 
-    // --- 카테고리 설정 ---
+    // --- 카테고리 설정 (1번 항목 기준 7시간으로 변경) ---
     const CATEGORIES = [
-      { id: 1, title: '자기주도학습시간 (월 12시간 이상)', icon: Clock, type: 'monthly_hours' },
+      { id: 1, title: '자기주도학습시간 (월 7시간 이상)', icon: Clock, type: 'monthly_hours' },
       { id: 2, title: '진로산책 프로그램', icon: Users, type: 'activity' },
       { id: 3, title: '독서를 품다', icon: BookOpen, type: 'activity' },
       { id: 4, title: '미래학자양성과정 / 심화연구', icon: Microscope, type: 'activity' },
@@ -106,7 +106,7 @@
       const [currentUser, setCurrentUser] = useState(null);
       
       const [loginTab, setLoginTab] = useState('student');
-      const [loginStudentNum, setLoginStudentNum] = useState(''); // 학생용 학번 추가
+      const [loginStudentNum, setLoginStudentNum] = useState(''); 
       const [loginName, setLoginName] = useState('');
       const [loginPassword, setLoginPassword] = useState('');
       const [loginError, setLoginError] = useState('');
@@ -126,8 +126,8 @@
       const [uploadText, setUploadText] = useState('');
       const [uploadMessage, setUploadMessage] = useState('');
 
-      const [uploadTeacherText, setUploadTeacherText] = useState(''); // 관리자용 교사 명단 텍스트
-      const [uploadTeacherMessage, setUploadTeacherMessage] = useState(''); // 관리자용 교사 명단 메시지
+      const [uploadTeacherText, setUploadTeacherText] = useState(''); 
+      const [uploadTeacherMessage, setUploadTeacherMessage] = useState(''); 
 
       const [coTeacherInput, setCoTeacherInput] = useState('');
       const [deleteTarget, setDeleteTarget] = useState(null);
@@ -142,15 +142,13 @@
 
       const qrCanvasRef = useRef(null);
 
-      // 💡 학번과 이름의 세로 줄맞춤을 100% 보장하는 Grid 레이아웃 포맷 함수!
+      // 학번과 이름의 세로 줄맞춤을 보장하는 Grid 레이아웃 포맷 함수
       const formatName = (fullName, isTable = true) => {
         if (!fullName) return '';
-        // 정규식: 맨 앞의 숫자(\d+)와 나머지 텍스트(.+)를 분리
         const match = String(fullName).trim().match(/^(\d+)\s*(.+)$/);
         
         if (match && match[1] && match[2]) {
           if (isTable) {
-            // 표 내부일 경우: 2칸짜리 고정 격자(Grid)를 만들어 학번은 왼쪽 칸 중앙에, 이름은 오른쪽 칸 중앙에 고정
             return (
               <div className="inline-grid grid-cols-2 gap-2 w-36 items-center">
                 <span className="text-center text-slate-500 font-normal tracking-widest">{match[1]}</span>
@@ -158,7 +156,6 @@
               </div>
             );
           } else {
-            // 일반 카드 화면일 경우: 자연스럽게 옆으로 나열
             return (
               <span className="inline-flex items-center gap-3">
                 <span className="text-slate-500 font-normal tracking-widest">{match[1]}</span>
@@ -300,7 +297,8 @@
         });
 
         Object.values(stats).forEach(student => {
-          const hasMetMonthlyGoal = Object.values(student.categories[1]).some(data => data.hours >= 12);
+          // 달성 기준: 7시간 이상으로 변경
+          const hasMetMonthlyGoal = Object.values(student.categories[1]).some(data => data.hours >= 7);
           let metCount = hasMetMonthlyGoal ? 1 : 0;
           for (let i = 2; i <= 7; i++) {
             if (student.categories[i].length > 0) metCount++;
@@ -772,7 +770,8 @@
                       const Icon = cat.icon; let isMet = false; let details = '';
                       
                       if (cat.id === 1) { 
-                        const m = Object.entries(myStats.categories[1]).filter(([_, data]) => data.hours >= 12); 
+                        // 학생 대시보드 표시 조건: 7시간
+                        const m = Object.entries(myStats.categories[1]).filter(([_, data]) => data.hours >= 7); 
                         isMet = m.length > 0; 
                         const allMonths = Object.entries(myStats.categories[1]).map(([m, data]) => `${m}월(${data.hours}시간, 총 ${data.count}회)`).join(', ');
                         details = allMonths ? allMonths : '기록 없음'; 
@@ -800,8 +799,8 @@
 
                 <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8">
                   <h2 className="text-xl font-bold mb-4">학급 상황판</h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
+                  <div className="overflow-x-auto w-full">
+                    <table className="w-full text-sm border-collapse min-w-max">
                       <thead><tr className="bg-slate-50 border-b"><th className="p-3 whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th><th className="p-3 text-center whitespace-nowrap align-middle">진행도</th>{[1,2,3,4,5,6,7].map(n=><th key={n} className="p-3 text-center align-middle">{n}번</th>)}</tr></thead>
                       <tbody>
                         {classStats.map(student => (
@@ -809,7 +808,7 @@
                             <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                             <td className="p-3 text-center font-bold align-middle">{Math.round((student.metCount/7)*100)}%</td>
                             {[1,2,3,4,5,6,7].map(n => {
-                              let isMet = n === 1 ? Object.values(student.categories[1]).some(data=>data.hours>=12) : student.categories[n].length > 0;
+                              let isMet = n === 1 ? Object.values(student.categories[1]).some(data=>data.hours>=7) : student.categories[n].length > 0;
                               return <td key={n} className="p-3 text-center align-middle">{isMet ? <CheckCircle size={16} className="text-green-500 mx-auto"/> : '-'}</td>;
                             })}
                           </tr>
@@ -896,7 +895,7 @@
                           <input type="number" min="1" required value={formHours} onChange={(e)=>setFormHours(e.target.value)} placeholder="예: 3" className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500" />
                         </div>
                       </div>
-                      <p className="text-xs text-indigo-600 mt-3">※ 선택하신 날짜가 포함된 '월'을 기준으로 12시간을 달성하면 인증됩니다.</p>
+                      <p className="text-xs text-indigo-600 mt-3">※ 선택하신 날짜가 포함된 '월'을 기준으로 7시간을 달성하면 인증됩니다.</p>
                     </div>
                   ) : (
                     <div>
@@ -1001,8 +1000,9 @@
 
                     {/* 학생별 종합 현황 (Matrix View) */}
                     {allViewMode === 'matrix' && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse min-w-[800px]">
+                      <div className="overflow-x-auto w-full">
+                        {/* min-w-[800px]에서 min-w-max로 변경하여 표가 잘리지 않게 방지 */}
+                        <table className="w-full text-sm border-collapse min-w-max">
                           <thead>
                             <tr className="bg-slate-50 border-y border-gray-200">
                               <th className="p-3 font-semibold text-gray-600 whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th>
@@ -1018,7 +1018,8 @@
                           <tbody>
                             {classStats.map(student => {
                               const cat1Months = Object.entries(student.categories[1]);
-                              const cat1IsMet = cat1Months.some(([_, data]) => data.hours >= 12);
+                              // 선생님 뷰 달성 기준: 7시간 이상으로 변경
+                              const cat1IsMet = cat1Months.some(([_, data]) => data.hours >= 7);
                               const cat1Tooltip = cat1Months.length > 0 ? cat1Months.map(([m, data]) => `${m} (${data.hours}시간, 총 ${data.count}회)`).join('\n') : '기록 없음';
 
                               return (
@@ -1031,7 +1032,8 @@
                                     <div className="flex flex-col items-center justify-center cursor-help">
                                       {cat1IsMet ? <CheckCircle size={18} className="text-green-500 mb-1" /> : <X size={18} className="text-gray-300 mb-1" />}
                                       <span className="text-[10px] text-gray-500 whitespace-pre-wrap leading-tight max-w-[90px]">
-                                        {cat1Months.length > 0 ? cat1Months.map(([m, data]) => <div key={m} className={data.hours >= 12 ? 'text-green-600 font-bold' : ''}>{m.split('-')[1]}월: {data.hours}h ({data.count}회)</div>) : '-'}
+                                        {/* 시간 표시 조건: 7시간으로 변경 */}
+                                        {cat1Months.length > 0 ? cat1Months.map(([m, data]) => <div key={m} className={data.hours >= 7 ? 'text-green-600 font-bold' : ''}>{m.split('-')[1]}월: {data.hours}h ({data.count}회)</div>) : '-'}
                                       </span>
                                     </div>
                                   </td>
@@ -1064,8 +1066,8 @@
 
                     {/* 상세 목록 (List View) */}
                     {allViewMode === 'list' && (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse">
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-sm border-collapse min-w-max">
                           <thead><tr className="bg-gray-100 border-y border-gray-200">
                             {currentUser.role === 'admin' && <th className="p-3 font-semibold text-center align-middle whitespace-nowrap">담당교사</th>}
                             <th className="p-3 font-semibold whitespace-nowrap min-w-[160px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th>
@@ -1136,21 +1138,23 @@
                           {uploadTeacherMessage && <p className={`mt-2 font-medium text-sm ${uploadTeacherMessage.includes('오류') ? 'text-red-500' : 'text-green-600'}`}>{uploadTeacherMessage}</p>}
                         </div>
 
-                        <table className="w-full text-sm border-collapse mt-4">
-                          <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[120px] text-center align-middle">이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">계정삭제</th></tr></thead>
-                          <tbody>
-                            {teacherRoster.map(t => (
-                              <tr key={t.id} className="border-b">
-                                <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{t.name} {t.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
-                                <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(t.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
-                                <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteUser(t.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
-                              </tr>
-                            ))}
-                            {teacherRoster.length === 0 && (
-                              <tr><td colSpan="3" className="p-4 text-center text-gray-500 align-middle">등록된 교사가 없습니다.</td></tr>
-                            )}
-                          </tbody>
-                        </table>
+                        <div className="overflow-x-auto w-full">
+                          <table className="w-full text-sm border-collapse mt-4 min-w-max">
+                            <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[120px] text-center align-middle">이름</th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">계정삭제</th></tr></thead>
+                            <tbody>
+                              {teacherRoster.map(t => (
+                                <tr key={t.id} className="border-b">
+                                  <td className="p-2 font-medium whitespace-nowrap text-center align-middle">{t.name} {t.password ? <span className="text-green-600 text-xs ml-1">(설정됨)</span> : <span className="text-gray-400 text-xs ml-1">(초기상태)</span>}</td>
+                                  <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(t.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
+                                  <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteUser(t.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
+                                </tr>
+                              ))}
+                              {teacherRoster.length === 0 && (
+                                <tr><td colSpan="3" className="p-4 text-center text-gray-500 align-middle">등록된 교사가 없습니다.</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
 
@@ -1205,25 +1209,27 @@
 
                     <div className="bg-white rounded-2xl shadow-sm border p-6">
                       <h2 className="text-xl font-bold mb-4">학생 비밀번호 초기화 및 관리</h2>
-                      <table className="w-full text-sm border-collapse">
-                        <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[200px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
-                        <tbody>
-                          {classRoster.map(st => (
-                            <tr key={st.id} className="border-b">
-                              <td className="p-2 font-medium whitespace-nowrap text-center align-middle">
-                                <div className="relative inline-block">
-                                  {formatName(st.name)}
-                                  <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] w-16 text-left">
-                                    {st.password ? <span className="text-green-600">(설정됨)</span> : <span className="text-gray-400">(초기상태)</span>}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
-                              <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-sm border-collapse min-w-max">
+                          <thead><tr className="bg-gray-100"><th className="p-2 whitespace-nowrap min-w-[200px] text-center align-middle"><div className="inline-grid grid-cols-2 gap-2 w-36"><span className="text-center">학번</span><span className="text-center">이름</span></div></th><th className="p-2 text-center whitespace-nowrap align-middle">초기화</th><th className="p-2 text-center whitespace-nowrap align-middle">명단삭제</th></tr></thead>
+                          <tbody>
+                            {classRoster.map(st => (
+                              <tr key={st.id} className="border-b">
+                                <td className="p-2 font-medium whitespace-nowrap text-center align-middle">
+                                  <div className="relative inline-block">
+                                    {formatName(st.name)}
+                                    <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 text-[11px] w-16 text-left">
+                                      {st.password ? <span className="text-green-600">(설정됨)</span> : <span className="text-gray-400">(초기상태)</span>}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-center align-middle"><button onClick={()=>handleResetPassword(st.name)} className="text-indigo-600 font-bold bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded">비밀번호 초기화</button></td>
+                                <td className="p-2 text-center align-middle"><button onClick={()=>handleDeleteStudent(st.name)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 size={16}/></button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
                   </div>
