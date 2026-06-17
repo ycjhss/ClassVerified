@@ -5,20 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학급 활동 인증 시스템</title>
   
-  <!-- 디자인 (Tailwind CSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- React 기능 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- Firebase (가장 안정적인 v8 버전) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-  <!-- QR 코드 생성 라이브러리 (안정적인 Qrious 사용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 </head>
 <body class="bg-slate-50">
@@ -329,7 +325,6 @@
         }
         return sorted;
       }, [visibleSubmissions, filterCategory, listSortOrder]);
-
 
       const handleLogin = async (e) => {
         e.preventDefault();
