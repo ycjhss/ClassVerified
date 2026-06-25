@@ -258,8 +258,10 @@ function App() {
     });
 
     Object.values(stats).forEach(student => {
-      // 7시간 달성 여부 확인
-      const hasMetMonthlyGoal = Object.values(student.categories[1]).some(data => data.hours >= 7);
+      // ★ 달성 기준 변경: 기록이 존재하는 '모든 달'이 각각 7시간 이상이어야만 통과
+      const cat1Data = Object.values(student.categories[1]);
+      const hasMetMonthlyGoal = cat1Data.length > 0 && cat1Data.every(data => data.hours >= 7);
+      
       let metCount = hasMetMonthlyGoal ? 1 : 0;
       for (let i = 2; i <= 7; i++) {
         if (student.categories[i].length > 0) metCount++;
@@ -380,7 +382,6 @@ function App() {
 
     try {
       if (editingId) {
-        // 수정 시에는 학생 이름이나 관리자 권한을 덮어쓰지 않고 내용만 업데이트
         await getSubmissionDoc(editingId).update({
           category: formCategory,
           date: formCategory === 1 ? formDate : null,
@@ -410,11 +411,10 @@ function App() {
     }
   };
 
-  // ★ 관리자(선생님)도 학생 기록을 수정할 수 있도록 로직 보강
   const handleEditClick = (sub) => {
     setEditingId(sub.id); 
     setFormCategory(sub.category);
-    setFormStudentName(sub.studentName); // 관리자 수정을 위해 기존 학생 이름 유지
+    setFormStudentName(sub.studentName);
     if (sub.category === 1) { 
       setFormDate(sub.date || (sub.month ? `${sub.month}-01` : new Date().toISOString().slice(0, 10))); 
       setFormHours(sub.hours?.toString() || ''); 
@@ -637,7 +637,6 @@ function App() {
               {currentUser.role === 'admin' ? '👑 전체 관리자' : currentUser.role === 'teacher' ? (currentUser.name === myMainTeacherName ? `👨‍🏫 ${currentUser.name} 선생님` : `👨‍🏫 ${currentUser.name} (${myMainTeacherName}반 부담임)`) : `🧑‍🎓 ${currentUser.name}`}
             </span>
             
-            {/* QR 코드 버튼 (선생님만 보임) */}
             {currentUser.role !== 'student' && (
               <button onClick={() => setShowQrModal(true)} className="text-gray-500 hover:text-indigo-600 p-2 transition-colors" title="접속 QR 코드 확인">
                 <QrCodeIcon size={20} />
@@ -651,7 +650,6 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        {/* QR 코드 모달 */}
         {showQrModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center relative animate-in fade-in zoom-in duration-200">
@@ -733,9 +731,10 @@ function App() {
                   const Icon = cat.icon; let isMet = false; let details = '';
                   
                   if (cat.id === 1) { 
-                    const m = Object.entries(myStats.categories[1]).filter(([_, data]) => data.hours >= 7); 
-                    isMet = m.length > 0; 
-                    const allMonths = Object.entries(myStats.categories[1]).map(([m, data]) => `${m}월(${data.hours}시간, 총 ${data.count}회)`).join(', ');
+                    const cat1Entries = Object.entries(myStats.categories[1]);
+                    // 달성 기준: 기록된 모든 달이 7시간 이상이어야 함
+                    isMet = cat1Entries.length > 0 && cat1Entries.every(([_, data]) => data.hours >= 7); 
+                    const allMonths = cat1Entries.map(([m, data]) => `${m}월(${data.hours}시간, 총 ${data.count}회)`).join(', ');
                     details = allMonths ? allMonths : '기록 없음'; 
                   } else { 
                     isMet = myStats.categories[cat.id].length > 0; 
@@ -770,7 +769,8 @@ function App() {
                         <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                         <td className="p-3 text-center font-bold align-middle">{Math.round((student.metCount/7)*100)}%</td>
                         {[1,2,3,4,5,6,7].map(n => {
-                          let isMet = n === 1 ? Object.values(student.categories[1]).some(data=>data.hours>=7) : student.categories[n].length > 0;
+                          const catData = Object.values(student.categories[n]);
+                          let isMet = n === 1 ? (catData.length > 0 && catData.every(data=>data.hours>=7)) : catData.length > 0;
                           return <td key={n} className="p-3 text-center align-middle">{isMet ? <CheckCircle size={16} className="text-green-500 mx-auto"/> : '-'}</td>;
                         })}
                       </tr>
@@ -981,7 +981,8 @@ function App() {
                       <tbody>
                         {classStats.map(student => {
                           const cat1Months = Object.entries(student.categories[1]);
-                          const cat1IsMet = cat1Months.some(([_, data]) => data.hours >= 7);
+                          // 선생님 뷰 달성 기준: 기록이 있는 모든 달이 7시간 이상이어야 함
+                          const cat1IsMet = cat1Months.length > 0 && cat1Months.every(([_, data]) => data.hours >= 7);
                           const cat1Tooltip = cat1Months.length > 0 ? cat1Months.map(([m, data]) => `${m} (${data.hours}시간, 총 ${data.count}회)`).join('\n') : '기록 없음';
 
                           return (
@@ -989,12 +990,12 @@ function App() {
                               <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                               <td className="p-3 text-center font-bold text-indigo-600 align-middle">{Math.round((student.metCount / 7) * 100)}%</td>
                               
-                              {/* 1번 자기주도학습: 누적 시간별 상세 표시 복구 */}
+                              {/* 1번 자기주도학습: 누적 시간별 상세 표시 및 미달성 월 빨간색 강조 */}
                               <td className="p-3 text-center align-middle" title={cat1Tooltip}>
                                 <div className="flex flex-col items-center justify-center cursor-help">
                                   {cat1IsMet ? <CheckCircle size={18} className="text-green-500 mb-1" /> : <X size={18} className="text-gray-300 mb-1" />}
                                   <span className="text-[10px] text-gray-500 whitespace-pre-wrap leading-tight max-w-[90px]">
-                                    {cat1Months.length > 0 ? cat1Months.map(([m, data]) => <div key={m} className={data.hours >= 7 ? 'text-green-600 font-bold' : ''}>{m.split('-')[1]}월: {data.hours}h ({data.count}회)</div>) : '-'}
+                                    {cat1Months.length > 0 ? cat1Months.map(([m, data]) => <div key={m} className={data.hours >= 7 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.split('-')[1]}월: {data.hours}h ({data.count}회)</div>) : '-'}
                                   </span>
                                 </div>
                               </td>
