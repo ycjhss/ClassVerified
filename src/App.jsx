@@ -58,11 +58,29 @@ const getSubmissionDoc = (id) => getSubmissionsRef().doc(id);
 const getUserDoc = (name) => getUsersRef().doc(name);
 
 // =========================================================
-// ★ [중요] 1번 자기주도학습시간 필수 인증 월 설정 ★
-// 1학기 기준 3~7월로 설정했습니다. (필요 시 수정 가능)
-// 이 배열에 있는 '모든' 달을 다 7시간 이상 채워야만 최종 인증됩니다.
+// ★ [수정됨] 1번 자기주도학습시간 필수 인증 월 동적 계산 ★
+// 시스템의 현재 날짜를 기준으로 3월부터 현재 월(최대 11월)까지 배열 생성
 // =========================================================
-const REQUIRED_MONTHS = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'];
+const calculateRequiredMonths = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  let currentMonth = today.getMonth() + 1; // 1~12
+
+  // 11월까지만 반영하도록 제한
+  if (currentMonth > 11) {
+    currentMonth = 11;
+  }
+
+  const months = [];
+  // 3월부터 현재 월까지 배열에 추가
+  for (let i = 3; i <= currentMonth; i++) {
+    const monthString = i < 10 ? `0${i}` : `${i}`;
+    months.push(`${year}-${monthString}`);
+  }
+  return months;
+};
+
+const REQUIRED_MONTHS = calculateRequiredMonths();
 
 // --- 카테고리 설정 ---
 const CATEGORIES = [
@@ -265,8 +283,8 @@ function App() {
     });
 
     Object.values(stats).forEach(student => {
-      // ★ 1번 항목 꼼수 방지: REQUIRED_MONTHS 배열에 있는 '모든' 달이 7시간 이상이어야만 인증 처리!
-      const hasMetMonthlyGoal = REQUIRED_MONTHS.every(month => {
+      // 동적으로 생성된 REQUIRED_MONTHS 배열의 모든 달이 7시간 이상이어야 통과
+      const hasMetMonthlyGoal = REQUIRED_MONTHS.length > 0 && REQUIRED_MONTHS.every(month => {
         const monthData = student.categories[1][month];
         return monthData && monthData.hours >= 7;
       });
@@ -391,7 +409,6 @@ function App() {
 
     try {
       if (editingId) {
-        // 수정 시에는 학생 이름이나 관리자 권한을 덮어쓰지 않고 내용만 업데이트
         await getSubmissionDoc(editingId).update({
           category: formCategory,
           date: formCategory === 1 ? formDate : null,
@@ -421,7 +438,6 @@ function App() {
     }
   };
 
-  // ★ 관리자(선생님)도 학생 기록을 수정할 수 있도록 처리
   const handleEditClick = (sub) => {
     setEditingId(sub.id); 
     setFormCategory(sub.category);
@@ -744,8 +760,8 @@ function App() {
                   const Icon = cat.icon; let isMet = false; let details = '';
                   
                   if (cat.id === 1) { 
-                    // ★ 학생 대시보드 검사: REQUIRED_MONTHS 배열에 정의된 필수 달을 모두 7시간 이상 달성했는지 체크
-                    isMet = REQUIRED_MONTHS.every(m => myStats.categories[1][m] && myStats.categories[1][m].hours >= 7); 
+                    // ★ 현재 날짜 기준 동적 REQUIRED_MONTHS로 검사
+                    isMet = REQUIRED_MONTHS.length > 0 && REQUIRED_MONTHS.every(m => myStats.categories[1][m] && myStats.categories[1][m].hours >= 7); 
                     
                     const detailsArr = REQUIRED_MONTHS.map(m => {
                       const d = myStats.categories[1][m];
@@ -787,7 +803,7 @@ function App() {
                         {[1,2,3,4,5,6,7].map(n => {
                           let isMet = false;
                           if (n === 1) {
-                            isMet = REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
+                            isMet = REQUIRED_MONTHS.length > 0 && REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
                           } else {
                             isMet = student.categories[n].length > 0;
                           }
@@ -980,7 +996,7 @@ function App() {
                   )}
                 </div>
 
-                {/* ★ 학생별 종합 현황 (Matrix View - 월별 누적 시간 툴팁 복구 및 미달성월 적색 표시) */}
+                {/* 학생별 종합 현황 (Matrix View) */}
                 {allViewMode === 'matrix' && (
                   <div className="overflow-x-auto w-full">
                     <table className="w-full text-sm border-collapse min-w-max">
@@ -998,8 +1014,8 @@ function App() {
                       </thead>
                       <tbody>
                         {classStats.map(student => {
-                          // ★ 1번 항목 표시: 3~7월 중 단 하나라도 7시간을 못 채우면 미달성 처리
-                          const cat1IsMet = REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
+                          // ★ 1번 항목 표시: 동적으로 생성된 REQUIRED_MONTHS 배열의 모든 달을 검사
+                          const cat1IsMet = REQUIRED_MONTHS.length > 0 && REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
                           
                           // 마우스 올리면 나오는 상세 툴팁
                           const cat1Tooltip = REQUIRED_MONTHS.map(m => {
