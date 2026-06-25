@@ -57,6 +57,13 @@ const getUsersRef = () => db.collection('artifacts').doc(appId).collection('publ
 const getSubmissionDoc = (id) => getSubmissionsRef().doc(id);
 const getUserDoc = (name) => getUsersRef().doc(name);
 
+// =========================================================
+// ★ [중요] 1번 자기주도학습시간 필수 인증 월 설정 ★
+// 1학기 기준 3~7월로 설정했습니다. (필요 시 수정 가능)
+// 이 배열에 있는 '모든' 달을 다 7시간 이상 채워야만 최종 인증됩니다.
+// =========================================================
+const REQUIRED_MONTHS = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07'];
+
 // --- 카테고리 설정 ---
 const CATEGORIES = [
   { id: 1, title: '자기주도학습시간 (월 7시간 이상)', icon: Clock, type: 'monthly_hours' },
@@ -258,9 +265,11 @@ function App() {
     });
 
     Object.values(stats).forEach(student => {
-      // ★ 달성 기준 변경: 기록이 존재하는 '모든 달'이 각각 7시간 이상이어야만 통과
-      const cat1Data = Object.values(student.categories[1]);
-      const hasMetMonthlyGoal = cat1Data.length > 0 && cat1Data.every(data => data.hours >= 7);
+      // ★ 1번 항목 꼼수 방지: REQUIRED_MONTHS 배열에 있는 '모든' 달이 7시간 이상이어야만 인증 처리!
+      const hasMetMonthlyGoal = REQUIRED_MONTHS.every(month => {
+        const monthData = student.categories[1][month];
+        return monthData && monthData.hours >= 7;
+      });
       
       let metCount = hasMetMonthlyGoal ? 1 : 0;
       for (let i = 2; i <= 7; i++) {
@@ -382,6 +391,7 @@ function App() {
 
     try {
       if (editingId) {
+        // 수정 시에는 학생 이름이나 관리자 권한을 덮어쓰지 않고 내용만 업데이트
         await getSubmissionDoc(editingId).update({
           category: formCategory,
           date: formCategory === 1 ? formDate : null,
@@ -411,6 +421,7 @@ function App() {
     }
   };
 
+  // ★ 관리자(선생님)도 학생 기록을 수정할 수 있도록 처리
   const handleEditClick = (sub) => {
     setEditingId(sub.id); 
     setFormCategory(sub.category);
@@ -637,6 +648,7 @@ function App() {
               {currentUser.role === 'admin' ? '👑 전체 관리자' : currentUser.role === 'teacher' ? (currentUser.name === myMainTeacherName ? `👨‍🏫 ${currentUser.name} 선생님` : `👨‍🏫 ${currentUser.name} (${myMainTeacherName}반 부담임)`) : `🧑‍🎓 ${currentUser.name}`}
             </span>
             
+            {/* QR 코드 버튼 (선생님만 보임) */}
             {currentUser.role !== 'student' && (
               <button onClick={() => setShowQrModal(true)} className="text-gray-500 hover:text-indigo-600 p-2 transition-colors" title="접속 QR 코드 확인">
                 <QrCodeIcon size={20} />
@@ -650,6 +662,7 @@ function App() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* QR 코드 모달 */}
         {showQrModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center relative animate-in fade-in zoom-in duration-200">
@@ -731,11 +744,14 @@ function App() {
                   const Icon = cat.icon; let isMet = false; let details = '';
                   
                   if (cat.id === 1) { 
-                    const cat1Entries = Object.entries(myStats.categories[1]);
-                    // 달성 기준: 기록된 모든 달이 7시간 이상이어야 함
-                    isMet = cat1Entries.length > 0 && cat1Entries.every(([_, data]) => data.hours >= 7); 
-                    const allMonths = cat1Entries.map(([m, data]) => `${m}월(${data.hours}시간, 총 ${data.count}회)`).join(', ');
-                    details = allMonths ? allMonths : '기록 없음'; 
+                    // ★ 학생 대시보드 검사: REQUIRED_MONTHS 배열에 정의된 필수 달을 모두 7시간 이상 달성했는지 체크
+                    isMet = REQUIRED_MONTHS.every(m => myStats.categories[1][m] && myStats.categories[1][m].hours >= 7); 
+                    
+                    const detailsArr = REQUIRED_MONTHS.map(m => {
+                      const d = myStats.categories[1][m];
+                      return d ? `${m.split('-')[1]}월(${d.hours}h)` : `${m.split('-')[1]}월(X)`;
+                    });
+                    details = detailsArr.join(', '); 
                   } else { 
                     isMet = myStats.categories[cat.id].length > 0; 
                     if (isMet) {
@@ -769,8 +785,12 @@ function App() {
                         <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                         <td className="p-3 text-center font-bold align-middle">{Math.round((student.metCount/7)*100)}%</td>
                         {[1,2,3,4,5,6,7].map(n => {
-                          const catData = Object.values(student.categories[n]);
-                          let isMet = n === 1 ? (catData.length > 0 && catData.every(data=>data.hours>=7)) : catData.length > 0;
+                          let isMet = false;
+                          if (n === 1) {
+                            isMet = REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
+                          } else {
+                            isMet = student.categories[n].length > 0;
+                          }
                           return <td key={n} className="p-3 text-center align-middle">{isMet ? <CheckCircle size={16} className="text-green-500 mx-auto"/> : '-'}</td>;
                         })}
                       </tr>
@@ -905,13 +925,12 @@ function App() {
               </div>
             )}
 
-            {/* 선생님 전체 조회 (상세 내역 복구 부분) */}
+            {/* 선생님 전체 조회 */}
             {teacherTab === 'all' && (
               <div className="bg-white rounded-2xl border p-6">
                 <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
                   <h2 className="text-xl font-bold">전체 조회</h2>
                   
-                  {/* ★ 항목별, 전체조회 모드 전환 버튼 복구 */}
                   <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
                     <button 
                       onClick={() => setAllViewMode('matrix')} 
@@ -927,7 +946,6 @@ function App() {
                     </button>
                   </div>
 
-                  {/* ★ 상세 목록 조회시 필터 및 다운로드 버튼 */}
                   {allViewMode === 'list' && (
                     <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       <select 
@@ -962,7 +980,7 @@ function App() {
                   )}
                 </div>
 
-                {/* ★ 학생별 종합 현황 (Matrix View - 월별 누적 시간 툴팁 복구) */}
+                {/* ★ 학생별 종합 현황 (Matrix View - 월별 누적 시간 툴팁 복구 및 미달성월 적색 표시) */}
                 {allViewMode === 'matrix' && (
                   <div className="overflow-x-auto w-full">
                     <table className="w-full text-sm border-collapse min-w-max">
@@ -980,27 +998,39 @@ function App() {
                       </thead>
                       <tbody>
                         {classStats.map(student => {
-                          const cat1Months = Object.entries(student.categories[1]);
-                          // 선생님 뷰 달성 기준: 기록이 있는 모든 달이 7시간 이상이어야 함
-                          const cat1IsMet = cat1Months.length > 0 && cat1Months.every(([_, data]) => data.hours >= 7);
-                          const cat1Tooltip = cat1Months.length > 0 ? cat1Months.map(([m, data]) => `${m} (${data.hours}시간, 총 ${data.count}회)`).join('\n') : '기록 없음';
+                          // ★ 1번 항목 표시: 3~7월 중 단 하나라도 7시간을 못 채우면 미달성 처리
+                          const cat1IsMet = REQUIRED_MONTHS.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
+                          
+                          // 마우스 올리면 나오는 상세 툴팁
+                          const cat1Tooltip = REQUIRED_MONTHS.map(m => {
+                            const d = student.categories[1][m];
+                            return d ? `${m.split('-')[1]}월: ${d.hours}h (${d.count}회)` : `${m.split('-')[1]}월: 기록 없음`;
+                          }).join('\n');
 
                           return (
                             <tr key={student.name} className="border-b border-gray-100 hover:bg-slate-50">
                               <td className="p-3 font-bold text-gray-800 whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
                               <td className="p-3 text-center font-bold text-indigo-600 align-middle">{Math.round((student.metCount / 7) * 100)}%</td>
                               
-                              {/* 1번 자기주도학습: 누적 시간별 상세 표시 및 미달성 월 빨간색 강조 */}
+                              {/* 1번 자기주도학습: 미달성 월은 빨간색으로 강력 강조 */}
                               <td className="p-3 text-center align-middle" title={cat1Tooltip}>
                                 <div className="flex flex-col items-center justify-center cursor-help">
                                   {cat1IsMet ? <CheckCircle size={18} className="text-green-500 mb-1" /> : <X size={18} className="text-gray-300 mb-1" />}
                                   <span className="text-[10px] text-gray-500 whitespace-pre-wrap leading-tight max-w-[90px]">
-                                    {cat1Months.length > 0 ? cat1Months.map(([m, data]) => <div key={m} className={data.hours >= 7 ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>{m.split('-')[1]}월: {data.hours}h ({data.count}회)</div>) : '-'}
+                                    {REQUIRED_MONTHS.map(m => {
+                                      const d = student.categories[1][m];
+                                      const isPass = d && d.hours >= 7;
+                                      return (
+                                        <div key={m} className={isPass ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>
+                                          {m.split('-')[1]}월: {d ? d.hours : 0}h
+                                        </div>
+                                      );
+                                    })}
                                   </span>
                                 </div>
                               </td>
 
-                              {/* 2~7번 항목 표시 (횟수 표시 복구) */}
+                              {/* 2~7번 항목 표시 */}
                               {[2, 3, 4, 5, 6, 7].map(n => {
                                 const catSubs = student.categories[n];
                                 const isMet = catSubs.length > 0;
@@ -1026,7 +1056,7 @@ function App() {
                   </div>
                 )}
 
-                {/* ★ 관리자 상세 목록 (List View - 수정 및 필터 기능 복구) */}
+                {/* 관리자 상세 목록 (List View) */}
                 {allViewMode === 'list' && (
                   <div className="overflow-x-auto w-full">
                     <table className="w-full text-sm border-collapse min-w-max">
@@ -1052,7 +1082,6 @@ function App() {
                                 {sub.status === 'approved' ? '승인' : sub.status === 'rejected' ? '반려' : '대기'}
                               </span>
                             </td>
-                            {/* ★ 관리자가 직접 수정하고 지울 수 있는 관리 탭 */}
                             <td className="p-3 text-center align-middle">
                               <div className="flex items-center justify-center space-x-2">
                                 <button onClick={() => handleEditClick(sub)} className="p-1 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded transition" title="관리자 수정">
