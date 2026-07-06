@@ -108,7 +108,7 @@ function App() {
   const [view, setView] = useState('dashboard');
   const [teacherTab, setTeacherTab] = useState('pending');
   const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStudent, setFilterStudent] = useState('all'); // 특정 학생 필터 상태 추가!
+  const [filterStudent, setFilterStudent] = useState('all'); 
   const [listSortOrder, setListSortOrder] = useState('timeDesc'); 
   const [allViewMode, setAllViewMode] = useState('matrix'); 
   
@@ -278,23 +278,15 @@ function App() {
     return classStats.find(s => s.name === currentUser.name) || { name: currentUser.name, categories: { 1: {}, 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, metCount: 0, isCertified: false };
   }, [currentUser, classStats]);
 
-  // ★ 학생, 항목 조건이 모두 포함된 향상된 검색 필터 로직 ★
   const sortedSubmissions = useMemo(() => {
     let filtered = visibleSubmissions;
-    
-    // 항목 필터 적용
     if (filterCategory !== 'all') {
       filtered = filtered.filter(s => s.category === Number(filterCategory));
     }
-    
-    // 학생 필터 적용
     if (filterStudent !== 'all') {
       filtered = filtered.filter(s => s.studentName === filterStudent);
     }
-    
     let sorted = [...filtered];
-    
-    // 정렬 적용
     if (listSortOrder === 'nameAsc') {
       sorted.sort((a, b) => a.studentName.localeCompare(b.studentName));
     } else if (listSortOrder === 'nameDesc') {
@@ -302,7 +294,6 @@ function App() {
     } else {
       sorted.sort((a, b) => b.timestamp - a.timestamp);
     }
-    
     return sorted;
   }, [visibleSubmissions, filterCategory, filterStudent, listSortOrder]);
 
@@ -633,25 +624,81 @@ function App() {
               </div>
             </div>
             
+            {/* ★ 대폭 향상된 학생 개별 상세 제출 기록 테이블 영역 ★ */}
             <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8 mt-8">
-              <h2 className="text-xl font-bold mb-4">내 전체 제출 기록</h2>
-              <div className="space-y-3 mt-4">
-                {submissions.filter(s => s.studentName === currentUser.name).map(sub => (
-                  <div key={sub.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 rounded-lg border gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-bold text-indigo-700">[{CATEGORIES.find(c => c.id === sub.category)?.title}]</span>
-                        {sub.status === 'pending' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded font-medium">검토 대기</span>}
-                        {sub.status === 'approved' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded font-medium">승인 완료</span>}
-                      </div>
-                      <p className="text-sm text-gray-600">{sub.category === 1 ? <span className="font-semibold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : <span className="line-clamp-2">{sub.description}</span>}</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button onClick={() => handleEditClick(sub)} className="p-2 text-blue-600 bg-blue-50 rounded-lg"><Edit2 size={18} /></button>
-                      <button onClick={() => handleDelete(sub.id)} className="p-2 text-red-600 bg-red-50 rounded-lg"><Trash2 size={18} /></button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                <div>
+                  <h2 className="text-xl font-bold">내 상세 제출 및 인증 기록</h2>
+                  <p className="text-xs text-gray-500 mt-1">내가 언제, 몇 시간을 올렸는지 상세 상태와 날짜를 확인할 수 있습니다.</p>
+                </div>
+                <span className="text-xs bg-indigo-50 text-indigo-700 font-bold px-3 py-1.5 rounded-lg shrink-0">
+                  총 제출 건수: {submissions.filter(s => s.studentName === currentUser.name).length}건
+                </span>
+              </div>
+              
+              <div className="overflow-x-auto w-full border rounded-xl mt-4">
+                <table className="w-full text-sm border-collapse min-w-max">
+                  <thead>
+                    <tr className="bg-gray-100 border-b text-gray-700">
+                      <th className="p-3 text-center align-middle font-semibold whitespace-nowrap w-28">제출일자</th>
+                      <th className="p-3 text-center align-middle font-semibold whitespace-nowrap w-36">활동 항목</th>
+                      <th className="p-3 text-left align-middle font-semibold min-w-[200px]">세부내용 / 인정시간</th>
+                      <th className="p-3 text-center align-middle font-semibold whitespace-nowrap w-24">인증 상태</th>
+                      <th className="p-3 text-center align-middle font-semibold whitespace-nowrap w-24">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.filter(s => s.studentName === currentUser.name).length > 0 ? (
+                      submissions.filter(s => s.studentName === currentUser.name).map(sub => {
+                        const cat = CATEGORIES.find(c => c.id === sub.category);
+                        return (
+                          <tr key={sub.id} className="border-b hover:bg-slate-50 transition-colors">
+                            {/* 제출 날짜 */}
+                            <td className="p-3 text-center align-middle text-gray-600 text-xs whitespace-nowrap">
+                              {new Date(sub.timestamp).toLocaleDateString()}
+                            </td>
+                            {/* 활동 항목 배지 */}
+                            <td className="p-3 text-center align-middle">
+                              <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>
+                                {cat?.title.split(' ')[0]}
+                              </span>
+                            </td>
+                            {/* 세부내용 혹은 시간 */}
+                            <td className="p-3 text-left align-middle text-gray-800">
+                              {sub.category === 1 ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium">활동일: {sub.date || sub.month}</span>
+                                  <span className="font-bold text-indigo-600">{sub.hours}시간 인정 요청</span>
+                                </div>
+                              ) : (
+                                <p className="text-sm line-clamp-2 text-gray-600 whitespace-pre-wrap">{sub.description}</p>
+                              )}
+                            </td>
+                            {/* 인증 상태 배지 */}
+                            <td className="p-3 text-center align-middle whitespace-nowrap">
+                              {sub.status === 'approved' ? (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><Check size={12} className="mr-0.5"/>승인완료</span>
+                              ) : sub.status === 'rejected' ? (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><X size={12} className="mr-0.5"/>반려됨</span>
+                              ) : (
+                                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold inline-flex items-center">검토대기</span>
+                              )}
+                            </td>
+                            {/* 수정/삭제 버튼 */}
+                            <td className="p-3 text-center align-middle whitespace-nowrap">
+                              <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md mr-1 transition-colors" title="수정"><Edit2 size={15} /></button>
+                              <button onClick={() => handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={15} /></button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="p-10 text-center text-gray-400">아직 제출한 활동 기록이 없습니다. '활동 제출' 탭에서 첫 기록을 올려보세요!</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -793,7 +840,6 @@ function App() {
                   </div>
                 )}
                 
-                {/* ★ 추가된 필터 컨트롤 패널과 확장된 테이블 ★ */}
                 {allViewMode === 'list' && (
                   <div className="mt-4">
                     <div className="flex flex-col md:flex-row gap-3 mb-4 bg-gray-50 p-4 rounded-xl border">
