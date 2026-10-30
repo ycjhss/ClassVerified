@@ -109,6 +109,7 @@ function App() {
   const [teacherTab, setTeacherTab] = useState('pending');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStudent, setFilterStudent] = useState('all'); 
+  const [filterStudentCategory, setFilterStudentCategory] = useState('all'); // ★ 개인별 모아보기 전용 카테고리 필터 추가
   const [listSortOrder, setListSortOrder] = useState('timeDesc'); 
   const [allViewMode, setAllViewMode] = useState('matrix'); 
   
@@ -278,7 +279,6 @@ function App() {
     return classStats.find(s => s.name === currentUser.name) || { name: currentUser.name, categories: { 1: {}, 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, metCount: 0, isCertified: false };
   }, [currentUser, classStats]);
 
-  // ★ 새로 추가된 [교사용 특정 학생 상세 프로필] 계산 로직
   const targetStudentStats = useMemo(() => {
     if (filterStudent === 'all' || allViewMode !== 'student') return null;
     return classStats.find(s => s.name === filterStudent) || null;
@@ -289,7 +289,7 @@ function App() {
     if (filterCategory !== 'all') {
       filtered = filtered.filter(s => s.category === Number(filterCategory));
     }
-    if (filterStudent !== 'all') {
+    if (filterStudent !== 'all' && allViewMode === 'list') {
       filtered = filtered.filter(s => s.studentName === filterStudent);
     }
     let sorted = [...filtered];
@@ -301,7 +301,25 @@ function App() {
       sorted.sort((a, b) => b.timestamp - a.timestamp);
     }
     return sorted;
-  }, [visibleSubmissions, filterCategory, filterStudent, listSortOrder]);
+  }, [visibleSubmissions, filterCategory, filterStudent, listSortOrder, allViewMode]);
+
+  // ★ 개인별 모아보기 전용 - 자동 항목 정렬 및 필터 적용
+  const displayedStudentSubs = useMemo(() => {
+    if (filterStudent === 'all') return [];
+    let subs = submissions.filter(s => s.studentName === filterStudent);
+    
+    if (filterStudentCategory !== 'all') {
+      subs = subs.filter(s => s.category === Number(filterStudentCategory));
+      subs.sort((a, b) => b.timestamp - a.timestamp);
+    } else {
+      // 전체를 볼 때는 자동으로 '활동 항목별'로 묶어줍니다 (정렬)
+      subs.sort((a, b) => {
+        if (a.category !== b.category) return a.category - b.category;
+        return b.timestamp - a.timestamp;
+      });
+    }
+    return subs;
+  }, [submissions, filterStudent, filterStudentCategory]);
 
   const handleLogin = async (e) => {
     e.preventDefault(); setLoginError('');
@@ -551,11 +569,9 @@ function App() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {CATEGORIES.map(cat => {
                   const Icon = cat.icon; let isMet = false; let details = '';
-                  
                   if (cat.id === 1) { 
                     const reqM = getStudentReqMonths(myStats.name);
                     isMet = reqM.length > 0 && reqM.every(m => myStats.categories[1][m] && myStats.categories[1][m].hours >= 7); 
-                    
                     const detailsArr = BASE_REQUIRED_MONTHS.map(m => {
                       if (!reqM.includes(m)) return `${m.split('-')[1]}월(면제)`;
                       const d = myStats.categories[1][m];
@@ -566,7 +582,6 @@ function App() {
                     isMet = myStats.categories[cat.id].length > 0; 
                     if (isMet) details = `${myStats.categories[cat.id].length}회 참여`;
                   }
-
                   return (
                     <div key={cat.id} className={`flex items-start p-4 rounded-xl border ${isMet ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
                       <div className={`p-2 rounded-lg mr-3 ${isMet ? 'bg-green-100 text-green-600' : 'bg-white text-gray-400'}`}>{isMet ? <CheckCircle size={20} /> : <Icon size={20} />}</div>
@@ -598,7 +613,6 @@ function App() {
                     {classStats.map(student => {
                       const reqM = getStudentReqMonths(student.name);
                       const cat1IsMet = reqM.length > 0 && reqM.every(m => student.categories[1][m] && student.categories[1][m].hours >= 7);
-
                       return (
                         <tr key={student.name} className={`border-b ${student.name === currentUser.name ? 'bg-indigo-50' : 'hover:bg-slate-50'}`}>
                           <td className="p-3 font-medium whitespace-nowrap text-center align-middle">{formatName(student.name)}</td>
@@ -659,17 +673,14 @@ function App() {
                         const cat = CATEGORIES.find(c => c.id === sub.category);
                         return (
                           <tr key={sub.id} className="border-b hover:bg-slate-50 transition-colors">
-                            {/* 제출 날짜 */}
                             <td className="p-3 text-center align-middle text-gray-600 text-xs whitespace-nowrap">
                               {new Date(sub.timestamp).toLocaleDateString()}
                             </td>
-                            {/* 활동 항목 배지 */}
                             <td className="p-3 text-center align-middle">
                               <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>
                                 {cat?.title.split(' ')[0]}
                               </span>
                             </td>
-                            {/* 세부내용 혹은 시간 */}
                             <td className="p-3 text-left align-middle text-gray-800">
                               {sub.category === 1 ? (
                                 <div className="flex items-center gap-2">
@@ -677,10 +688,11 @@ function App() {
                                   <span className="font-bold text-indigo-600">{sub.hours}시간 인정 요청</span>
                                 </div>
                               ) : (
-                                <p className="text-sm line-clamp-2 text-gray-600 whitespace-pre-wrap">{sub.description}</p>
+                                <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-gray-50 border border-gray-100 rounded-md">
+                                  {sub.description}
+                                </div>
                               )}
                             </td>
-                            {/* 인증 상태 배지 */}
                             <td className="p-3 text-center align-middle whitespace-nowrap">
                               {sub.status === 'approved' ? (
                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><Check size={12} className="mr-0.5"/>승인완료</span>
@@ -690,7 +702,6 @@ function App() {
                                 <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold inline-flex items-center">검토대기</span>
                               )}
                             </td>
-                            {/* 수정/삭제 버튼 */}
                             <td className="p-3 text-center align-middle whitespace-nowrap">
                               <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md mr-1 transition-colors" title="수정"><Edit2 size={15} /></button>
                               <button onClick={() => handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={15} /></button>
@@ -762,7 +773,7 @@ function App() {
                           <span className="font-bold text-lg">{formatName(sub.studentName, false)}</span>
                           <span className="text-sm font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">[{CATEGORIES.find(c => c.id === sub.category)?.title}]</span>
                         </div>
-                        <p className="text-gray-700">{sub.category === 1 ? <span className="font-medium text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : sub.description}</p>
+                        <p className="text-gray-700 whitespace-pre-wrap">{sub.category === 1 ? <span className="font-medium text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : sub.description}</p>
                         <p className="text-xs text-gray-400 mt-2">제출일: {new Date(sub.timestamp).toLocaleString()}</p>
                       </div>
                       <div className="flex space-x-2 shrink-0">
@@ -784,7 +795,6 @@ function App() {
                   <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg overflow-x-auto">
                     <button onClick={() => setAllViewMode('matrix')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'matrix' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>학생별 종합 현황</button>
                     <button onClick={() => setAllViewMode('list')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'list' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>상세 목록 조회</button>
-                    {/* ★ 새로 추가된 [개인별 모아보기] 탭 버튼 ★ */}
                     <button onClick={() => setAllViewMode('student')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'student' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>개인별 모아보기</button>
                   </div>
                 </div>
@@ -892,7 +902,13 @@ function App() {
                                     <span className="bg-indigo-50 px-2 py-1 rounded-md">{cat?.title.split(' ')[0]}</span>
                                   </td>
                                   <td className="p-3 text-left align-middle text-gray-700">
-                                    {sub.category === 1 ? <span className="font-bold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span> : sub.description}
+                                    {sub.category === 1 ? (
+                                      <span className="font-bold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span>
+                                    ) : (
+                                      <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-white border rounded-md shadow-sm">
+                                        {sub.description}
+                                      </div>
+                                    )}
                                   </td>
                                   <td className="p-3 text-center align-middle">
                                     <div className="flex flex-col items-center justify-center gap-1">
@@ -918,15 +934,28 @@ function App() {
                   </div>
                 )}
 
-                {/* ★ (3) 새로 추가된 [개인별 모아보기] 전용 뷰 ★ */}
+                {/* (3) 개인별 모아보기 전용 뷰 */}
                 {allViewMode === 'student' && (
                   <div className="mt-4">
-                    <div className="mb-6 p-4 bg-gray-50 rounded-xl border flex items-center gap-4">
-                      <label className="font-bold text-gray-700 shrink-0">학생 선택:</label>
-                      <select className="px-4 py-2 border rounded-lg text-sm flex-1 max-w-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none" value={filterStudent} onChange={(e) => setFilterStudent(e.target.value)}>
-                        <option value="all">👩‍🎓 학생을 선택해주세요</option>
-                        {classRoster.map(st => <option key={st.id || st.name} value={st.name}>{st.name}</option>)}
-                      </select>
+                    {/* ★ 상단 필터 영역: 학생 + 카테고리 ★ */}
+                    <div className="mb-6 p-4 bg-gray-50 rounded-xl border flex flex-col md:flex-row items-start md:items-center gap-4">
+                      <div className="flex items-center gap-2 flex-1 w-full">
+                        <label className="font-bold text-gray-700 shrink-0">학생 선택:</label>
+                        <select className="px-4 py-2 border rounded-lg text-sm w-full bg-white focus:ring-2 focus:ring-indigo-500 outline-none" value={filterStudent} onChange={(e) => setFilterStudent(e.target.value)}>
+                          <option value="all">👩‍🎓 학생을 선택해주세요</option>
+                          {classRoster.map(st => <option key={st.id || st.name} value={st.name}>{st.name}</option>)}
+                        </select>
+                      </div>
+                      
+                      {filterStudent !== 'all' && (
+                        <div className="flex items-center gap-2 flex-1 w-full">
+                          <label className="font-bold text-gray-700 shrink-0">항목 필터:</label>
+                          <select className="px-4 py-2 border rounded-lg text-sm w-full bg-white focus:ring-2 focus:ring-indigo-500 outline-none" value={filterStudentCategory} onChange={(e) => setFilterStudentCategory(e.target.value)}>
+                            <option value="all">📂 전체 활동 항목 모아보기</option>
+                            {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {targetStudentStats ? (
@@ -976,7 +1005,7 @@ function App() {
                           })}
                         </div>
 
-                        {/* 개인별 제출 타임라인 테이블 */}
+                        {/* 개인별 상세 제출 타임라인 테이블 */}
                         <h4 className="font-bold text-lg mb-4 flex items-center"><Award size={20} className="mr-2 text-indigo-600"/> 상세 제출 기록</h4>
                         <div className="overflow-x-auto w-full border rounded-xl">
                           <table className="w-full text-sm border-collapse min-w-max">
@@ -984,14 +1013,14 @@ function App() {
                               <tr className="bg-gray-50 border-b text-gray-700">
                                 <th className="p-3 text-center font-semibold w-28">제출일자</th>
                                 <th className="p-3 text-center font-semibold w-36">활동 항목</th>
-                                <th className="p-3 text-left font-semibold">세부내용 / 인정시간</th>
+                                <th className="p-3 text-left font-semibold min-w-[200px]">세부내용 / 인정시간</th>
                                 <th className="p-3 text-center font-semibold w-24">인증 상태</th>
                                 <th className="p-3 text-center font-semibold w-24">관리</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {submissions.filter(s => s.studentName === filterStudent).length > 0 ? (
-                                submissions.filter(s => s.studentName === filterStudent).map(sub => {
+                              {displayedStudentSubs.length > 0 ? (
+                                displayedStudentSubs.map(sub => {
                                   const cat = CATEGORIES.find(c => c.id === sub.category);
                                   return (
                                     <tr key={sub.id} className="border-b hover:bg-indigo-50/30 transition-colors">
@@ -999,6 +1028,7 @@ function App() {
                                       <td className="p-3 text-center">
                                         <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>{cat?.title.split(' ')[0]}</span>
                                       </td>
+                                      {/* ★ 세부내용 잘림 방지 (박스 형태로 전체 표시) ★ */}
                                       <td className="p-3 text-left text-gray-800">
                                         {sub.category === 1 ? (
                                           <div className="flex items-center gap-2">
@@ -1006,7 +1036,9 @@ function App() {
                                             <span className="font-bold text-indigo-600">{sub.hours}시간</span>
                                           </div>
                                         ) : (
-                                          <p className="text-sm line-clamp-2 text-gray-600 whitespace-pre-wrap">{sub.description}</p>
+                                          <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-white border border-gray-200 rounded-md shadow-sm">
+                                            {sub.description}
+                                          </div>
                                         )}
                                       </td>
                                       <td className="p-3 text-center">
@@ -1020,7 +1052,7 @@ function App() {
                                   );
                                 })
                               ) : (
-                                <tr><td colSpan="5" className="p-8 text-center text-gray-400">이 학생의 제출 기록이 없습니다.</td></tr>
+                                <tr><td colSpan="5" className="p-8 text-center text-gray-400">해당 항목에 대한 제출 기록이 없습니다.</td></tr>
                               )}
                             </tbody>
                           </table>
