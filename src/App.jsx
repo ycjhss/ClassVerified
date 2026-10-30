@@ -109,7 +109,7 @@ function App() {
   const [teacherTab, setTeacherTab] = useState('pending');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStudent, setFilterStudent] = useState('all'); 
-  const [filterStudentCategory, setFilterStudentCategory] = useState('all'); // ★ 개인별 모아보기 전용 카테고리 필터 추가
+  const [filterStudentCategory, setFilterStudentCategory] = useState('all'); 
   const [listSortOrder, setListSortOrder] = useState('timeDesc'); 
   const [allViewMode, setAllViewMode] = useState('matrix'); 
   
@@ -303,7 +303,6 @@ function App() {
     return sorted;
   }, [visibleSubmissions, filterCategory, filterStudent, listSortOrder, allViewMode]);
 
-  // ★ 개인별 모아보기 전용 - 자동 항목 정렬 및 필터 적용
   const displayedStudentSubs = useMemo(() => {
     if (filterStudent === 'all') return [];
     let subs = submissions.filter(s => s.studentName === filterStudent);
@@ -312,7 +311,6 @@ function App() {
       subs = subs.filter(s => s.category === Number(filterStudentCategory));
       subs.sort((a, b) => b.timestamp - a.timestamp);
     } else {
-      // 전체를 볼 때는 자동으로 '활동 항목별'로 묶어줍니다 (정렬)
       subs.sort((a, b) => {
         if (a.category !== b.category) return a.category - b.category;
         return b.timestamp - a.timestamp;
@@ -454,6 +452,76 @@ function App() {
   };
 
   const handleDownloadQR = () => { if (qrImageUrl) { const link = document.createElement('a'); link.download = '학급앱_QR.png'; link.href = qrImageUrl; link.click(); } };
+
+  // ★ 새로 추가된 통합 렌더링 로직 (1번 항목 일괄 묶음 표시 + 긴 글 전체 표시) ★
+  const renderGroupedRows = (subsList) => {
+    const cat1Subs = subsList.filter(s => s.category === 1).sort((a, b) => (b.date || b.month || '').localeCompare(a.date || a.month || ''));
+    const otherSubs = subsList.filter(s => s.category !== 1).sort((a, b) => b.timestamp - a.timestamp);
+
+    return (
+      <>
+        {cat1Subs.length > 0 && (
+          <tr className="border-b bg-indigo-50/30 hover:bg-indigo-50/50 transition-colors">
+            <td className="p-3 text-center align-middle text-gray-500 font-bold text-xs whitespace-nowrap">일괄 표시</td>
+            <td className="p-3 text-center align-middle">
+              <span className="bg-indigo-100 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title="자기주도학습시간">자기주도학습</span>
+              <div className="text-[11px] text-indigo-600 font-bold mt-1.5 bg-white border border-indigo-200 rounded px-2 py-0.5 inline-block">총 {cat1Subs.reduce((acc, curr) => acc + (Number(curr.hours) || 0), 0)}시간</div>
+            </td>
+            <td colSpan="3" className="p-4 text-left align-middle">
+              <div className="flex flex-wrap gap-2">
+                {cat1Subs.map(sub => (
+                  <div key={sub.id} className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg p-2 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+                    <span className="font-bold text-indigo-600 text-[12px] w-20 text-center tracking-tight">{sub.date || sub.month}</span>
+                    <span className="text-xs text-gray-700 font-bold w-10 text-right bg-gray-50 px-1 py-0.5 rounded">{sub.hours}h</span>
+                    {sub.status === 'approved' ? <span className="text-[11px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">승인</span> : sub.status === 'rejected' ? <span className="text-[11px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">반려</span> : <span className="text-[11px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold">대기</span>}
+                    <div className="flex gap-1 border-l border-gray-200 pl-2 ml-1">
+                      <button onClick={() => handleEditClick(sub)} className="text-blue-500 hover:text-blue-700 p-1 bg-blue-50 hover:bg-blue-100 rounded transition-colors" title="수정"><Edit2 size={13}/></button>
+                      <button onClick={() => handleDelete(sub.id)} className="text-red-500 hover:text-red-700 p-1 bg-red-50 hover:bg-red-100 rounded transition-colors" title="삭제"><Trash2 size={13}/></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </td>
+          </tr>
+        )}
+        {otherSubs.map(sub => {
+          const cat = CATEGORIES.find(c => c.id === sub.category);
+          return (
+            <tr key={sub.id} className="border-b hover:bg-slate-50 transition-colors">
+              <td className="p-3 text-center align-middle text-gray-600 text-xs whitespace-nowrap">
+                {new Date(sub.timestamp).toLocaleDateString()}
+              </td>
+              <td className="p-3 text-center align-middle">
+                <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>
+                  {cat?.title.split(' ')[0]}
+                </span>
+              </td>
+              <td className="p-3 text-left align-middle text-gray-800">
+                <div className="text-sm text-gray-700 whitespace-pre-wrap p-3.5 bg-white border border-gray-200 rounded-xl shadow-sm leading-relaxed min-h-[60px]">
+                  {sub.description}
+                </div>
+              </td>
+              <td className="p-3 text-center align-middle whitespace-nowrap">
+                <div className="flex flex-col items-center justify-center gap-1.5">
+                  {sub.status === 'approved' ? (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><Check size={12} className="mr-0.5"/>승인완료</span>
+                  ) : sub.status === 'rejected' ? (
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><X size={12} className="mr-0.5"/>반려됨</span>
+                  ) : (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold inline-flex items-center">검토대기</span>
+                  )}
+                </div>
+              </td>
+              <td className="p-3 text-center align-middle whitespace-nowrap">
+                <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md mr-1 transition-colors" title="수정"><Edit2 size={16}/></button>
+                <button onClick={() => handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={16}/></button>
+              </td>
+            </tr>
+          );
+        })}
+      </>
+    );
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-slate-50">로딩 중...</div>;
 
@@ -644,7 +712,7 @@ function App() {
               </div>
             </div>
             
-            {/* 학생 개별 상세 제출 기록 테이블 영역 */}
+            {/* 학생 개별 상세 제출 기록 테이블 영역 (일괄 묶음 렌더링 적용!) */}
             <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8 mt-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                 <div>
@@ -669,46 +737,7 @@ function App() {
                   </thead>
                   <tbody>
                     {submissions.filter(s => s.studentName === currentUser.name).length > 0 ? (
-                      submissions.filter(s => s.studentName === currentUser.name).map(sub => {
-                        const cat = CATEGORIES.find(c => c.id === sub.category);
-                        return (
-                          <tr key={sub.id} className="border-b hover:bg-slate-50 transition-colors">
-                            <td className="p-3 text-center align-middle text-gray-600 text-xs whitespace-nowrap">
-                              {new Date(sub.timestamp).toLocaleDateString()}
-                            </td>
-                            <td className="p-3 text-center align-middle">
-                              <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>
-                                {cat?.title.split(' ')[0]}
-                              </span>
-                            </td>
-                            <td className="p-3 text-left align-middle text-gray-800">
-                              {sub.category === 1 ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium">활동일: {sub.date || sub.month}</span>
-                                  <span className="font-bold text-indigo-600">{sub.hours}시간 인정 요청</span>
-                                </div>
-                              ) : (
-                                <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-gray-50 border border-gray-100 rounded-md">
-                                  {sub.description}
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-3 text-center align-middle whitespace-nowrap">
-                              {sub.status === 'approved' ? (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><Check size={12} className="mr-0.5"/>승인완료</span>
-                              ) : sub.status === 'rejected' ? (
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md font-bold inline-flex items-center"><X size={12} className="mr-0.5"/>반려됨</span>
-                              ) : (
-                                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold inline-flex items-center">검토대기</span>
-                              )}
-                            </td>
-                            <td className="p-3 text-center align-middle whitespace-nowrap">
-                              <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md mr-1 transition-colors" title="수정"><Edit2 size={15} /></button>
-                              <button onClick={() => handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="삭제"><Trash2 size={15} /></button>
-                            </td>
-                          </tr>
-                        );
-                      })
+                      renderGroupedRows(submissions.filter(s => s.studentName === currentUser.name))
                     ) : (
                       <tr>
                         <td colSpan="5" className="p-10 text-center text-gray-400">아직 제출한 활동 기록이 없습니다. '활동 제출' 탭에서 첫 기록을 올려보세요!</td>
@@ -859,7 +888,7 @@ function App() {
                   </div>
                 )}
                 
-                {/* (2) 상세 목록 조회 */}
+                {/* (2) 상세 목록 조회 (전체 학생 리스트 형태) */}
                 {allViewMode === 'list' && (
                   <div className="mt-4">
                     <div className="flex flex-col md:flex-row gap-3 mb-4 bg-gray-50 p-4 rounded-xl border">
@@ -901,11 +930,12 @@ function App() {
                                   <td className="p-3 text-center align-middle text-indigo-700 font-medium text-xs">
                                     <span className="bg-indigo-50 px-2 py-1 rounded-md">{cat?.title.split(' ')[0]}</span>
                                   </td>
+                                  {/* 긴 글 펼쳐보기 적용! */}
                                   <td className="p-3 text-left align-middle text-gray-700">
                                     {sub.category === 1 ? (
                                       <span className="font-bold text-indigo-600">{sub.date || sub.month} ({sub.hours}시간)</span>
                                     ) : (
-                                      <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-white border rounded-md shadow-sm">
+                                      <div className="text-sm text-gray-700 whitespace-pre-wrap p-3.5 bg-white border border-gray-200 rounded-xl shadow-sm leading-relaxed min-h-[60px]">
                                         {sub.description}
                                       </div>
                                     )}
@@ -934,10 +964,9 @@ function App() {
                   </div>
                 )}
 
-                {/* (3) 개인별 모아보기 전용 뷰 */}
+                {/* (3) 개인별 모아보기 전용 뷰 (일괄 묶음 렌더링 적용!) */}
                 {allViewMode === 'student' && (
                   <div className="mt-4">
-                    {/* ★ 상단 필터 영역: 학생 + 카테고리 ★ */}
                     <div className="mb-6 p-4 bg-gray-50 rounded-xl border flex flex-col md:flex-row items-start md:items-center gap-4">
                       <div className="flex items-center gap-2 flex-1 w-full">
                         <label className="font-bold text-gray-700 shrink-0">학생 선택:</label>
@@ -1020,37 +1049,7 @@ function App() {
                             </thead>
                             <tbody>
                               {displayedStudentSubs.length > 0 ? (
-                                displayedStudentSubs.map(sub => {
-                                  const cat = CATEGORIES.find(c => c.id === sub.category);
-                                  return (
-                                    <tr key={sub.id} className="border-b hover:bg-indigo-50/30 transition-colors">
-                                      <td className="p-3 text-center text-gray-600 text-xs whitespace-nowrap">{new Date(sub.timestamp).toLocaleDateString()}</td>
-                                      <td className="p-3 text-center">
-                                        <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>{cat?.title.split(' ')[0]}</span>
-                                      </td>
-                                      {/* ★ 세부내용 잘림 방지 (박스 형태로 전체 표시) ★ */}
-                                      <td className="p-3 text-left text-gray-800">
-                                        {sub.category === 1 ? (
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium">활동일: {sub.date || sub.month}</span>
-                                            <span className="font-bold text-indigo-600">{sub.hours}시간</span>
-                                          </div>
-                                        ) : (
-                                          <div className="text-sm text-gray-700 whitespace-pre-wrap p-2.5 bg-white border border-gray-200 rounded-md shadow-sm">
-                                            {sub.description}
-                                          </div>
-                                        )}
-                                      </td>
-                                      <td className="p-3 text-center">
-                                        {sub.status === 'approved' ? <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold">승인됨</span> : sub.status === 'rejected' ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-md font-bold">반려됨</span> : <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold">대기중</span>}
-                                      </td>
-                                      <td className="p-3 text-center whitespace-nowrap">
-                                        <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md mr-1 transition-colors"><Edit2 size={16}/></button>
-                                        <button onClick={()=>handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors"><Trash2 size={16}/></button>
-                                      </td>
-                                    </tr>
-                                  );
-                                })
+                                renderGroupedRows(displayedStudentSubs)
                               ) : (
                                 <tr><td colSpan="5" className="p-8 text-center text-gray-400">해당 항목에 대한 제출 기록이 없습니다.</td></tr>
                               )}
