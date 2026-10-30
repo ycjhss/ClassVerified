@@ -278,6 +278,12 @@ function App() {
     return classStats.find(s => s.name === currentUser.name) || { name: currentUser.name, categories: { 1: {}, 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] }, metCount: 0, isCertified: false };
   }, [currentUser, classStats]);
 
+  // ★ 새로 추가된 [교사용 특정 학생 상세 프로필] 계산 로직
+  const targetStudentStats = useMemo(() => {
+    if (filterStudent === 'all' || allViewMode !== 'student') return null;
+    return classStats.find(s => s.name === filterStudent) || null;
+  }, [filterStudent, classStats, allViewMode]);
+
   const sortedSubmissions = useMemo(() => {
     let filtered = visibleSubmissions;
     if (filterCategory !== 'all') {
@@ -624,7 +630,7 @@ function App() {
               </div>
             </div>
             
-            {/* ★ 대폭 향상된 학생 개별 상세 제출 기록 테이블 영역 ★ */}
+            {/* 학생 개별 상세 제출 기록 테이블 영역 */}
             <div className="bg-white rounded-2xl shadow-sm border p-6 md:p-8 mt-8">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                 <div>
@@ -775,12 +781,15 @@ function App() {
               <div className="bg-white rounded-2xl border p-6">
                 <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
                   <h2 className="text-xl font-bold">전체 조회</h2>
-                  <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
-                    <button onClick={() => setAllViewMode('matrix')} className={`px-4 py-1.5 rounded-md text-sm font-bold ${allViewMode === 'matrix' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>학생별 종합 현황</button>
-                    <button onClick={() => setAllViewMode('list')} className={`px-4 py-1.5 rounded-md text-sm font-bold ${allViewMode === 'list' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>상세 목록 조회</button>
+                  <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg overflow-x-auto">
+                    <button onClick={() => setAllViewMode('matrix')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'matrix' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>학생별 종합 현황</button>
+                    <button onClick={() => setAllViewMode('list')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'list' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>상세 목록 조회</button>
+                    {/* ★ 새로 추가된 [개인별 모아보기] 탭 버튼 ★ */}
+                    <button onClick={() => setAllViewMode('student')} className={`px-4 py-1.5 rounded-md text-sm font-bold whitespace-nowrap ${allViewMode === 'student' ? 'bg-white text-indigo-700 shadow' : 'text-gray-500'}`}>개인별 모아보기</button>
                   </div>
                 </div>
 
+                {/* (1) 학생별 종합 현황 */}
                 {allViewMode === 'matrix' && (
                   <div className="overflow-x-auto w-full">
                     <table className="w-full text-sm border-collapse min-w-max">
@@ -840,6 +849,7 @@ function App() {
                   </div>
                 )}
                 
+                {/* (2) 상세 목록 조회 */}
                 {allViewMode === 'list' && (
                   <div className="mt-4">
                     <div className="flex flex-col md:flex-row gap-3 mb-4 bg-gray-50 p-4 rounded-xl border">
@@ -905,6 +915,123 @@ function App() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                )}
+
+                {/* ★ (3) 새로 추가된 [개인별 모아보기] 전용 뷰 ★ */}
+                {allViewMode === 'student' && (
+                  <div className="mt-4">
+                    <div className="mb-6 p-4 bg-gray-50 rounded-xl border flex items-center gap-4">
+                      <label className="font-bold text-gray-700 shrink-0">학생 선택:</label>
+                      <select className="px-4 py-2 border rounded-lg text-sm flex-1 max-w-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none" value={filterStudent} onChange={(e) => setFilterStudent(e.target.value)}>
+                        <option value="all">👩‍🎓 학생을 선택해주세요</option>
+                        {classRoster.map(st => <option key={st.id || st.name} value={st.name}>{st.name}</option>)}
+                      </select>
+                    </div>
+
+                    {targetStudentStats ? (
+                      <div className="bg-white border rounded-2xl p-6 shadow-sm">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center shrink-0"><Users size={24} /></div>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900">{formatName(filterStudent, false)}</h3>
+                              <p className="text-sm text-gray-500">종합 인증 현황 및 상세 제출 기록</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center bg-indigo-50 px-4 py-3 rounded-xl border border-indigo-100 shrink-0">
+                            <span className="text-indigo-800 font-bold text-xl mr-3">{targetStudentStats.metCount} / 7</span>
+                            {targetStudentStats.isCertified ? <span className="text-green-600 font-bold">완료!</span> : <span className="text-indigo-600 font-medium">진행 중</span>}
+                          </div>
+                        </div>
+
+                        {/* 개인별 7가지 항목 달성 현황 카드 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                          {CATEGORIES.map(cat => {
+                            const Icon = cat.icon; let isMet = false; let details = '';
+                            if (cat.id === 1) { 
+                              const reqM = getStudentReqMonths(targetStudentStats.name);
+                              isMet = reqM.length > 0 && reqM.every(m => targetStudentStats.categories[1][m] && targetStudentStats.categories[1][m].hours >= 7); 
+                              const detailsArr = BASE_REQUIRED_MONTHS.map(m => {
+                                if (!reqM.includes(m)) return `${m.split('-')[1]}월(면제)`;
+                                const d = targetStudentStats.categories[1][m];
+                                return d ? `${m.split('-')[1]}월(${d.hours}h)` : `${m.split('-')[1]}월(X)`;
+                              });
+                              details = detailsArr.join(', '); 
+                            } else { 
+                              isMet = targetStudentStats.categories[cat.id].length > 0; 
+                              if (isMet) details = `${targetStudentStats.categories[cat.id].length}회 참여`;
+                            }
+                            return (
+                              <div key={cat.id} className={`flex items-start p-4 rounded-xl border ${isMet ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                                <div className={`p-2 rounded-lg mr-3 shrink-0 ${isMet ? 'bg-green-100 text-green-600' : 'bg-white text-gray-400'}`}>{isMet ? <CheckCircle size={20} /> : <Icon size={20} />}</div>
+                                <div>
+                                  <h4 className={`font-semibold text-sm ${isMet ? 'text-green-900' : 'text-gray-700'}`}>{cat.title}</h4>
+                                  {cat.id === 1 && <p className="text-xs text-indigo-500 mt-1 font-medium">{details}</p>}
+                                  {cat.id !== 1 && isMet && <p className="text-xs text-indigo-500 mt-1 font-medium">{details}</p>}
+                                  {!isMet && <p className="text-xs text-red-400 mt-1">미달성</p>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* 개인별 제출 타임라인 테이블 */}
+                        <h4 className="font-bold text-lg mb-4 flex items-center"><Award size={20} className="mr-2 text-indigo-600"/> 상세 제출 기록</h4>
+                        <div className="overflow-x-auto w-full border rounded-xl">
+                          <table className="w-full text-sm border-collapse min-w-max">
+                            <thead>
+                              <tr className="bg-gray-50 border-b text-gray-700">
+                                <th className="p-3 text-center font-semibold w-28">제출일자</th>
+                                <th className="p-3 text-center font-semibold w-36">활동 항목</th>
+                                <th className="p-3 text-left font-semibold">세부내용 / 인정시간</th>
+                                <th className="p-3 text-center font-semibold w-24">인증 상태</th>
+                                <th className="p-3 text-center font-semibold w-24">관리</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {submissions.filter(s => s.studentName === filterStudent).length > 0 ? (
+                                submissions.filter(s => s.studentName === filterStudent).map(sub => {
+                                  const cat = CATEGORIES.find(c => c.id === sub.category);
+                                  return (
+                                    <tr key={sub.id} className="border-b hover:bg-indigo-50/30 transition-colors">
+                                      <td className="p-3 text-center text-gray-600 text-xs whitespace-nowrap">{new Date(sub.timestamp).toLocaleDateString()}</td>
+                                      <td className="p-3 text-center">
+                                        <span className="bg-indigo-50 text-indigo-700 text-[11px] font-bold px-2 py-1 rounded-md inline-block max-w-[140px] truncate" title={cat?.title}>{cat?.title.split(' ')[0]}</span>
+                                      </td>
+                                      <td className="p-3 text-left text-gray-800">
+                                        {sub.category === 1 ? (
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-medium">활동일: {sub.date || sub.month}</span>
+                                            <span className="font-bold text-indigo-600">{sub.hours}시간</span>
+                                          </div>
+                                        ) : (
+                                          <p className="text-sm line-clamp-2 text-gray-600 whitespace-pre-wrap">{sub.description}</p>
+                                        )}
+                                      </td>
+                                      <td className="p-3 text-center">
+                                        {sub.status === 'approved' ? <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold">승인됨</span> : sub.status === 'rejected' ? <span className="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded-md font-bold">반려됨</span> : <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-1 rounded-md font-bold">대기중</span>}
+                                      </td>
+                                      <td className="p-3 text-center whitespace-nowrap">
+                                        <button onClick={() => handleEditClick(sub)} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md mr-1 transition-colors"><Edit2 size={16}/></button>
+                                        <button onClick={()=>handleDelete(sub.id)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors"><Trash2 size={16}/></button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              ) : (
+                                <tr><td colSpan="5" className="p-8 text-center text-gray-400">이 학생의 제출 기록이 없습니다.</td></tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                        <Users size={48} className="mx-auto text-gray-300 mb-4" />
+                        <p className="text-gray-500 font-medium">위에서 학생을 선택하면 개인별 종합 달성 현황과<br/>모든 활동 기록을 한눈에 볼 수 있습니다.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
